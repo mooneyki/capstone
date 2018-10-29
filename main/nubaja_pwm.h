@@ -6,13 +6,13 @@
 #include "soc/mcpwm_struct.h"
 
 //You can get these value from the datasheet of servo you use, in general pulse width varies between 1000 to 2000 mocrosecond
-#define SERVO_MIN_PULSEWIDTH 	700 //Minimum pulse width in microsecond
-#define SERVO_MAX_PULSEWIDTH 	2300 //Maximum pulse width in microsecond
-#define SERVO_MAX_DEGREE 		120 //Maximum angle in degree upto which servo can rotate
-#define THROTTLE_PWM 			25 //net name IO25_THROTTLE
-#define BRAKE_PWM 				17 //net name IO17_BRAKE_PWM
-#define SERVO_PWM_FREQUENCY		50
-#define BRAKE_PWM_FREQUENCY		1000
+#define SERVO_MIN_PULSEWIDTH 	700 			//Minimum pulse width in microsecond
+#define SERVO_MAX_PULSEWIDTH 	2300 			//Maximum pulse width in microsecond
+#define SERVO_MAX_DEGREE 		120 			//Maximum angle in degree upto which servo can rotate
+#define THROTTLE_PWM 			25 				//net name IO25_THROTTLE
+#define BRAKE_PWM 				17 				//net name IO17_BRAKE_PWM
+#define SERVO_PWM_FREQUENCY		50				//HZ
+#define BRAKE_PWM_FREQUENCY		1000			//HZ
 #define SERVO_OFFSET_DEG 		0
 
 void pwm_init () 

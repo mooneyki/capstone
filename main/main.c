@@ -9,6 +9,7 @@
 
 #include "nubaja_gpio.h"
 #include "nubaja_i2c.h"
+#include "nubaja_ad7998.h"
 #include "nubaja_sd.h"
 #include "nubaja_pid.h"
 #include "nubaja_pwm.h"
@@ -73,9 +74,9 @@ static void daq_task(void *arg)
 {
   // initial config
 
-  // init imu
-  i2c_master_config(PORT_0, FAST_MODE, I2C_MASTER_0_SDA_IO,I2C_MASTER_0_SCL_IO);
-  LSM6DSM imu = init_lsm6dsm(PORT_0, IMU_SLAVE_ADDR);
+  // init ADC
+  i2c_master_config(PORT_0, FAST_MODE_PLUS, I2C_MASTER_0_SDA_IO,I2C_MASTER_0_SCL_IO);
+  ad7998_init( PORT_0, ADC_SLAVE_ADDR, CHANNEL_SELECTION_0 ); //init adc
 
   // init sd
   init_sd();

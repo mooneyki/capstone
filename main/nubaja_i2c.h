@@ -147,11 +147,11 @@ int i2c_read_2_bytes(int port_num, uint8_t slave_address, int reg, uint16_t *dat
 }
 
 // read three consecutive groups of 2 bytes from the register of an I2C device
-int i2c_read_2_bytes_3(int port_num, uint8_t slave_address, int reg,
-                       uint16_t *data_0, uint16_t *data_1, uint16_t *data_2)
+int i2c_read_2_bytes_4(int port_num, uint8_t slave_address, int reg,
+                       uint16_t *data_0, uint16_t *data_1, uint16_t *data_2, uint16_t *data_3)
 {
   int ret;
-  uint8_t data_0_h, data_0_l, data_1_h, data_1_l, data_2_h, data_2_l;
+  uint8_t data_0_h, data_0_l, data_1_h, data_1_l, data_2_h, data_2_l, data_3_h, data_3_l;
 
   i2c_cmd_handle_t cmd = i2c_cmd_link_create();
   i2c_master_start(cmd);
@@ -167,7 +167,10 @@ int i2c_read_2_bytes_3(int port_num, uint8_t slave_address, int reg,
   i2c_master_read_byte(cmd, &data_1_l, ACK);
 
   i2c_master_read_byte(cmd, &data_2_h, ACK);
-  i2c_master_read_byte(cmd, &data_2_l, NACK);
+  i2c_master_read_byte(cmd, &data_2_l, ACK);
+
+  i2c_master_read_byte(cmd, &data_3_h, ACK);
+  i2c_master_read_byte(cmd, &data_3_l, NACK);
 
   i2c_master_stop(cmd);
   ret = i2c_master_cmd_begin(port_num, cmd, I2C_TASK_LENGTH / portTICK_RATE_MS);
@@ -176,6 +179,7 @@ int i2c_read_2_bytes_3(int port_num, uint8_t slave_address, int reg,
   *data_0 = (data_0_h << 8 | data_0_l);
   *data_1 = (data_1_h << 8 | data_1_l);
   *data_2 = (data_2_h << 8 | data_2_l);
+  *data_3 = (data_2_h << 8 | data_2_l);
 
   if (ret != ESP_OK) {
     printf("i2c_read_2_bytes_3 -- failure on port: %d, slave: %d, reg: %d\n",
