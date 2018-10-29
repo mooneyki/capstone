@@ -43,6 +43,12 @@ Channel 7 - load cell
 Channel 8 - throttle position
 */
 
+static float counts_to_volts ( uint16_t adc_counts ) 
+{
+	float v = ( (float) adc_counts / (float) 4096 ) * (float) 3.3;
+	return v;
+}
+
 void ad7998_init( int port_num, int slave_address, int channel_selection ) 
 {
 	i2c_write_byte(port_num, slave_address, CONFIGURATION, ( channel_selection | FLTR | ALERT_BUSY | ALERT_BUSY_POLARITY ) );
