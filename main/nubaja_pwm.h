@@ -11,6 +11,9 @@
 #define SERVO_MAX_DEGREE 		120 //Maximum angle in degree upto which servo can rotate
 #define THROTTLE_PWM 			25 //net name IO25_THROTTLE
 #define BRAKE_PWM 				17 //net name IO17_BRAKE_PWM
+#define SERVO_PWM_FREQUENCY		50
+#define BRAKE_PWM_FREQUENCY		1000
+#define SERVO_OFFSET_DEG 		0
 
 void pwm_init () 
 {
@@ -19,7 +22,7 @@ void pwm_init ()
 
 	//servo config
     mcpwm_config_t pwm_config;
-    pwm_config.frequency = 50;    
+    pwm_config.frequency = SERVO_PWM_FREQUENCY;    
     pwm_config.cmpr_a = 0; //duty cycle from 0-100   
     pwm_config.cmpr_b = 0;   
     pwm_config.counter_mode = MCPWM_UP_COUNTER;
@@ -27,22 +30,23 @@ void pwm_init ()
     mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config);    
 
     //brake drive config
-    pwm_config.frequency = 1000;
+    pwm_config.frequency = BRAKE_PWM_FREQUENCY;
     mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_1, &pwm_config);    	
 }
 
 /**
  * @brief Use this function to calcute pulse width for per degree rotation
  */
-uint32_t cal_pulsewidth(uint32_t degree_of_rotation)
+static uint32_t cal_pulsewidth(uint32_t degree_of_rotation)
 {
     uint32_t cal_pulsewidth = 0;
     cal_pulsewidth = (SERVO_MIN_PULSEWIDTH + (((SERVO_MAX_PULSEWIDTH - SERVO_MIN_PULSEWIDTH) * (degree_of_rotation)) / (SERVO_MAX_DEGREE)));
     return cal_pulsewidth;
 }
 
-void set_throttle (uint32_t servo_angle) 
+void set_throttle (uint32_t tp) //tps from 0-100%
 {
+	uint32_t servo_angle = ( tps * 0.9 ) + SERVO_OFFSET_DEG; //TO-DO - DEFINE THIS RELATIONSHIP
 	uint32_t pw = cal_pulsewidth( servo_angle );
 	mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, pw);	
 }

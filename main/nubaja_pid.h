@@ -49,14 +49,14 @@ void pid_update ( pid_t pid, int sp, int pv )
 
 }
 
-// USE - HOW THIS WOULD BE IMPLEMENTED TO CONTROL THROTTLE ACTUATOR
-int RPM; 
-int sp; 
-pid_t throttle; 
+// // USE - HOW THIS WOULD BE IMPLEMENTED TO CONTROL THROTTLE ACTUATOR
+// int RPM; 
+// int sp; 
+// pid_t throttle; 
 
-// EACH LOOP ITERATION: 
-sp = fetch_sp(RPM);
-pid_update(throttle, sp, RPM);
-set_throttle(throttle->output);
+// // EACH LOOP ITERATION: 
+// sp = fetch_sp(RPM);
+// pid_update(throttle, sp, RPM);
+// set_throttle(throttle->output);
 
 #endif
