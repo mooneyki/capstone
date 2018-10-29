@@ -170,56 +170,6 @@ static void daq_task(void *arg)
   vTaskDelete(NULL);
 }
 
-static void display_task(void *arg)
-{
-  // init display
-  i2c_master_config(PORT_1, FAST_MODE_PLUS, I2C_MASTER_1_SDA_IO, I2C_MASTER_1_SCL_IO);
-  AS1115 display = init_as1115(PORT_1, AS1115_SLAVE_ADDR);
-  uint8_t display_data = 0, cycle_display = 0,
-          ones, tens, hundreds, thousands;
-  uint16_t disp_val = 0;
-
-  while (1)
-  {
-    // sleep to lower refresh rate
-    vTaskDelay(1000 / DISPLAY_REFRESH_RATE / portTICK_PERIOD_MS);
-
-    // get button flag
-    cycle_display = xEventGroupGetBitsFromISR(button_eg) & CYCLE_DISPLAY_BIT;
-
-    if (cycle_display)
-    {
-      display_data = (display_data + 1) % 3;
-      xEventGroupClearBits(button_eg, CYCLE_DISPLAY_BIT);
-    }
-
-    data_point dp;
-    xQueuePeek(current_dp_queue, &dp, 0);
-    switch (display_data)
-    {
-      case 0:
-        disp_val = dp.rpm;
-        break;
-      case 1:
-        disp_val = dp.mph;
-        break;
-      case 2:
-        disp_val = dp.temp;
-        break;
-      default:
-        printf("display_data -- invalid value\n");
-    }
-    ones = disp_val % 10;
-    tens = (disp_val /= 10) % 10;
-    hundreds = (disp_val /= 10) % 10;
-    thousands = (disp_val /= 10) % 10;
-    display_4_digits(&display, thousands, hundreds, tens, ones);
-  }
-  // per FreeRTOS, tasks MUST be deleted before breaking out of its implementing funciton
-  vTaskDelete(NULL);
-}
-
-
 // initialize the daq timer and start the daq task
 void app_main()
 {
@@ -232,13 +182,13 @@ void app_main()
   current_dp_queue = xQueueCreate(1, sizeof(data_point));
   data_point dp =
   {
-    .rpm = 0,    .mph = 0,    .temp = 0,
-    .gyro_x = 0, .gyro_y = 0, .gyro_z = 0,
-    .xl_x = 0,   .xl_y = 0,   .xl_z = 0
+    dp->prim_rpm = 0,    dp->sec_rpm = 0,        dp->torque = 0,
+    dp->temp3 = 0,       dp->belt_temp = 0,      dp->temp2 = 0,
+    dp->i_brake = 0,     dp->temp1 = 0,          dp->load_cell = 0, 
+    dp->tps = 0
   };
   xQueueOverwrite(current_dp_queue, &dp);
 
-  // rpm, mph, logging toggle, display cycle, and flasher are gpio
   configure_gpio();
 
   // start daq timer and tasks
@@ -246,6 +196,4 @@ void app_main()
 
   xTaskCreatePinnedToCore(daq_task, "daq_task", 2048,
                           NULL, (configMAX_PRIORITIES-1), NULL, 0);
-  xTaskCreatePinnedToCore(display_task, "display_task", 2048,
-                          NULL, (configMAX_PRIORITIES-2), NULL, 1);
 }

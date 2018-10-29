@@ -21,19 +21,20 @@ EventGroupHandle_t writing_eg;  // event group to signify writing data
 
 typedef struct
 {
-  uint16_t rpm, mph, temp;
-  int16_t gyro_x, gyro_y, gyro_z;
-  int16_t xl_x, xl_y, xl_z;
+  uint16_t prim_rpm, sec_rpm;
+  int16_t torque, temp3, belt_temp, temp2, i_brake, temp1, load_cell, tps;
 } data_point;
 
 void print_data_point(data_point *dp)
 {
-  printf("rpm:\t%" PRIu16     "\tmph:\t%" PRIu16    "\ttemp:\t%" PRIu16 "\n"
-         "gyro_x:\t%" PRId16  "\tgyro_y:\t%" PRId16 "\tgyro_z:\t%" PRId16 "\n"
-         "xl_x:\t%" PRId16    "\txl_y:\t%" PRId16   "\txl_z:\t%" PRId16 "\n",
-         dp->rpm,             dp->mph,              dp->temp,
-         dp->gyro_x,          dp->gyro_y,           dp->gyro_z,
-         dp->xl_x,            dp->xl_y,             dp->xl_z);
+  printf("primary rpm:\t%" PRIu16     "\tsecondary rpm:\t%" PRIu16    "\ttorque:\t%" PRId16 "\n"
+         "temp3:\t%" PRId16           "\tbelt temp:\t%" PRId16        "\ttemp2:\t%" PRId16 "\n"
+         "brake current:\t%" PRId16   "\ttemp1:\t%" PRId16            "\tload cell:\t%" PRId16 "\n",
+         "throttle position:\t%" PRId16,
+         dp->prim_rpm,                dp->sec_rpm,                    dp->torque,
+         dp->temp3,                   dp->belt_temp,                  dp->temp2,
+         dp->i_brake,                 dp->temp1,                      dp->load_cell, 
+         dp->tps);
 }
 
 static void write_logging_queue_to_sd(void *arg)
@@ -62,12 +63,13 @@ static void write_logging_queue_to_sd(void *arg)
   while (xQueueReceive(lq, &dp, 0) != pdFALSE)
   {
     snprintf(buff + (i * line_size), buff_size - (i * line_size),
-             "%6" PRIu16 ",%6" PRIu16 ",%6" PRIu16 ","
-             "%6" PRId16 ",%6" PRId16 ",%6" PRId16 ","
-             "%6" PRId16 ",%6" PRId16 ",%6" PRId16 "\n",
-             dp.rpm,    dp.mph,     dp.temp,
-             dp.gyro_x, dp.gyro_y,  dp.gyro_z,
-             dp.xl_x,   dp.xl_y,    dp.xl_z);
+             "%6" PRIu16 ", %6" PRIu16 ",   %6" PRId16 ","
+             "%6" PRId16 ", %6" PRId16 ",   %6" PRId16 ","
+             "%6" PRId16 ", %6" PRId16 ",   %6" PRId16 "\n",
+              dp->prim_rpm, dp->sec_rpm,    dp->torque,
+              dp->temp3,    dp->belt_temp,  dp->temp2,
+              dp->i_brake,  dp->temp1,      dp->load_cell, 
+              dp->tps);
     ++i;
   }
 
