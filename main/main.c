@@ -12,6 +12,8 @@
 #include "nubaja_as1115.h"
 #include "nubaja_lsm6dsm.h"
 #include "nubaja_sd.h"
+#include "nubaja_pid.h"
+#include "nubaja_pwm.h"
 
 #define DAQ_TIMER_GROUP       TIMER_GROUP_0  // group of daq timer
 #define DAQ_TIMER_IDX         0              // index of daq timer
