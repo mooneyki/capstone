@@ -29,7 +29,6 @@ double last_sec_rpm_time = 0;
 #define ENABLE_LOGGING_BIT  (1 << 0)
 #define DATA_TO_LOG_BIT     (1 << 1)
 #define CYCLE_DISPLAY_BIT   (1 << 2)
-EventGroupHandle_t button_eg;  // button press event group (logging, display)
 
 void flasher_on()
 {

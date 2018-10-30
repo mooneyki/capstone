@@ -74,7 +74,7 @@ static void write_logging_queue_to_sd(void *arg)
   }
 
   FILE *fp;
-  fp = fopen("/sdcard/esp_data.csv", "a");
+  fp = fopen("/sdcard/esp_dyno_data.csv", "a");
   if (fp == NULL)
   {
     printf("write_logging_queue_to_sd -- failed to create file\n");

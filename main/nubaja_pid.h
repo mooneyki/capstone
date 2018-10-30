@@ -49,6 +49,27 @@ void pid_update ( pid_t pid, int sp, int pv )
 
 }
 
+void init_pid ( pid_t pid, float kp, float ki, float kd, float windupGuard, float outputMax ) 
+{
+	// measurements and input / output variables
+	pid->error = 0; 
+	pid->old_error = 0;
+	pid->output = 0; 
+	
+	// tuning parameters
+	pid->kp = kp;
+	pid->ki = ki;
+	pid->kd = kd; 
+
+	pid->P = 0;
+	pid->I = 0;
+	pid->D = 0;
+
+	//bounds
+	pid->windupGuard = windupGuard; 
+	pid->outputMax = outputMax;	
+}
+
 // // USE - HOW THIS WOULD BE IMPLEMENTED TO CONTROL THROTTLE ACTUATOR
 // int RPM; 
 // int sp; 

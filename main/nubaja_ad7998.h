@@ -7,7 +7,8 @@
 //run in fast mode plus
 //use cmd mode
 
-#define ADC_SLAVE_ADDR		0x23 //pn ad7998-1 with AS @ GND. this is default address. 
+#define ADC_SLAVE_ADDR			0x23 //pn ad7998-1 with AS @ GND. this is default address. 
+#define ADC_FS					3.3
 
 //register addresses
 #define CONVERSION_RESULT		0x0
@@ -45,7 +46,7 @@ Channel 8 - throttle position
 
 static float counts_to_volts ( uint16_t adc_counts ) 
 {
-	float v = ( (float) adc_counts / (float) 4096 ) * (float) 3.3;
+	float v = ( (float) adc_counts / (float) 4096 ) * (float) ADC_FS;
 	return v;
 }
 

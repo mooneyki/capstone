@@ -17,11 +17,13 @@
 #define DAQ_TIMER_GROUP       TIMER_GROUP_0  // group of daq timer
 #define DAQ_TIMER_IDX         0              // index of daq timer
 #define DAQ_TIMER_HZ          1000           // frequency of the daq timer in Hz
+#define DAQ_TIMER_DIVIDER     100
 
-// queue to time the daq task
-xQueueHandle daq_timer_queue;
-// queues to store data points
-xQueueHandle logging_queue_1, logging_queue_2, current_dp_queue;
+xQueueHandle daq_timer_queue; // queue to time the daq task
+xQueueHandle logging_queue_1, logging_queue_2, current_dp_queue; // queues to store data points
+
+pid_t throttle_pid;
+pid_t brake_current_pid;
 
 // interrupt for daq_task timer
 void IRAM_ATTR daq_timer_isr(void *para)
@@ -45,12 +47,9 @@ void IRAM_ATTR daq_timer_isr(void *para)
 
 static void daq_timer_init()
 {
-  // how quickly timer ticks, 80 MHz / divider
-  int divider = 100;
-
   // select and initialize basic parameters of the timer
   timer_config_t config;
-  config.divider = divider;
+  config.divider = DAQ_TIMER_DIVIDER;
   config.counter_dir = TIMER_COUNT_UP;
   config.counter_en = TIMER_PAUSE;
   config.alarm_en = TIMER_ALARM_EN;
@@ -62,7 +61,7 @@ static void daq_timer_init()
   timer_set_counter_value(DAQ_TIMER_GROUP, DAQ_TIMER_IDX, 0x00000000ULL);
 
   // configure the alarm value and the interrupt on alarm
-  timer_set_alarm_value(DAQ_TIMER_GROUP, DAQ_TIMER_IDX, TIMER_BASE_CLK / divider / DAQ_TIMER_HZ);
+  timer_set_alarm_value(DAQ_TIMER_GROUP, DAQ_TIMER_IDX, TIMER_BASE_CLK / DAQ_TIMER_DIVIDER / DAQ_TIMER_HZ);
   timer_enable_intr(DAQ_TIMER_GROUP, DAQ_TIMER_IDX);
   timer_isr_register(DAQ_TIMER_GROUP, DAQ_TIMER_IDX, daq_timer_isr, NULL, ESP_INTR_FLAG_IRAM, NULL);
 
@@ -82,8 +81,12 @@ static void daq_task(void *arg)
   init_sd();
   xQueueHandle current_logging_queue = logging_queue_1;
 
-  // TODO: be rid of debugging
-  //int ticks = 0, last_ticks = 0;
+  //init GPIOs
+  configure_gpio();
+
+  //init PIDs
+  init_pid ( throttle_pid, 0, 0, 0, 0, 0 ); 
+  init_pid ( brake_current_pid, 0, 0, 0, 0, 0 );
 
   // button vars
   uint8_t buttons, logging_enabled, data_to_log;
@@ -94,16 +97,8 @@ static void daq_task(void *arg)
     // wait for timer alarm
     xQueueReceive(daq_timer_queue, &intr_status, portMAX_DELAY);
 
-    // TODO: be rid of debugging
-    //ticks = xTaskGetTickCount();
-    //if (ticks - last_ticks != 1)
-      //printf("%d, %d\n", ticks, ticks - last_ticks);
-    //last_ticks = ticks;
-
     // get button flags
-    buttons = xEventGroupGetBitsFromISR(button_eg);
     logging_enabled = buttons & ENABLE_LOGGING_BIT;
-    data_to_log = buttons & DATA_TO_LOG_BIT;
 
     // flasher if logging
     if (logging_enabled)
@@ -114,18 +109,19 @@ static void daq_task(void *arg)
     // create data struct and populate with this cycle's data
     data_point dp =
     {
-      .rpm = 0,    .mph = 0,    .temp = 0,
-      .gyro_x = 0, .gyro_y = 0, .gyro_z = 0,
-      .xl_x = 0,   .xl_y = 0,   .xl_z = 0
+      dp->prim_rpm = 0,    dp->sec_rpm = 0,        dp->torque = 0,
+      dp->temp3 = 0,       dp->belt_temp = 0,      dp->temp2 = 0,
+      dp->i_brake = 0,     dp->temp1 = 0,          dp->load_cell = 0, 
+      dp->tps = 0
     };
 
     // imu
     imu_read_gyro_xl(&imu, &(dp.gyro_x), &(dp.gyro_y), &(dp.gyro_z),
                            &(dp.xl_x), &(dp.xl_y), &(dp.xl_z));
 
-    // rpm, mph, temp
-    xQueuePeek(rpm_queue, &(dp.rpm), 0);
-    xQueuePeek(mph_queue, &(dp.mph), 0);
+    // rpm measurements
+    xQueuePeek(primary_rpm_queue, &(dp.prim_rpm), 0);
+    xQueuePeek(secondary_rpm_queue, &(dp.sec_rpm), 0);
 
     // TODO: temp
     dp.temp = 0;
@@ -188,8 +184,6 @@ void app_main()
     dp->tps = 0
   };
   xQueueOverwrite(current_dp_queue, &dp);
-
-  configure_gpio();
 
   // start daq timer and tasks
   daq_timer_init();
