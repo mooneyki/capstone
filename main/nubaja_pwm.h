@@ -44,10 +44,10 @@ static uint32_t cal_pulsewidth(uint32_t degree_of_rotation)
     return cal_pulsewidth;
 }
 
-void set_throttle (uint32_t tp) //tps from 0-100%
+void set_throttle (float tp) //tps from 0-100%
 {
-	uint32_t servo_angle = ( tps * 0.9 ) + SERVO_OFFSET_DEG; //TO-DO - DEFINE THIS RELATIONSHIP
-	uint32_t pw = cal_pulsewidth( servo_angle );
+	float servo_angle = ( tp * 0.9 ) + SERVO_OFFSET_DEG; //TO-DO - DEFINE THIS RELATIONSHIP
+	uint32_t pw = cal_pulsewidth( (uint32_t) servo_angle );
 	mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, pw);	
 }
 

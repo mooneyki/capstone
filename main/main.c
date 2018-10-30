@@ -74,39 +74,25 @@ static void daq_timer_init()
 // task to run the main daq system based on a timer
 static void daq_task(void *arg)
 {
+
+  /** INIT STAGE **/
+
   // vars
   uint32_t intr_status;
-  char filename[] = "brake_profile_0.csv";
+  char filename_i[];
+  char filename_t[];
   char buffer[BSIZE];
   FILE *fp;
   char *field;
-  float i_sp[BSIZE];
+  float i_sp[BSIZE]; //brake current set point (amps)
+  float tps_sp[BSIZE]; //throttle position set point (0-100%)
   int i = 0;
+  int j = 0;
+  int en_eng = 0; 
+  int eng = 0;
+  int num_profile;
 
-  //LOAD BRAKE PROFILE FROM SCV FILE
-  /* open the CSV file */
-  fp = fopen(filename,"r");
-  if( fp == NULL)
-  {
-    printf("Unable to open file '%s'\n",filename);
-    exit(1);
-  }
-
-  /* parse data */
-  while(fgets(buffer,BSIZE,fp))
-  {
-    field=strtok(buffer,","); /* get value */
-    i_sp[i]=atof(field);
-    
-    /* display the result in the proper format */
-    printf("High: %.1f\n",
-        i_sp[i]);
-        
-    i++;
-  }
-
-  fclose(fp); /* close file */
-
+  //module configurations
   // init ADC
   i2c_master_config( PORT_0, FAST_MODE_PLUS, I2C_MASTER_0_SDA_IO, I2C_MASTER_0_SCL_IO );
   ad7998_init( PORT_0, ADC_SLAVE_ADDR, CHANNEL_SELECTION_0 ); //init adc
@@ -122,7 +108,30 @@ static void daq_task(void *arg)
   init_pid ( throttle_pid, 0, 0, 0, 0, 0 ); 
   init_pid ( brake_current_pid, 0, 0, 0, 0, 0 );
 
+  //default states
+  ebrake_set();
+  engine_off();
+  flasher_off(); 
+  set_throttle(0); //no throttle
+  set_brake_duty(0); //no braking 
+
+  //prompt user to start engine
+  while ( !en_eng ) 
+  {
+    printf("Start engine?\n");
+    scanf("%d", &en_eng);
+  }
+  engine_on();
+
+  //prompt user to confirm engine running and warm
+  while ( !eng ) {
+    printf("Engine running?\n");
+    scanf("%d", &eng);    
+  }
+
   flasher_on();
+
+  /** END INIT STAGE **/  
 
   while (1)
   {
@@ -144,7 +153,6 @@ static void daq_task(void *arg)
     // rpm measurements
     xQueuePeek( primary_rpm_queue, &(dp.prim_rpm), 0 );
     xQueuePeek( secondary_rpm_queue, &(dp.sec_rpm), 0 );
-
 
     // push struct to current dp queue for display
     xQueueOverwrite( current_dp_queue, &dp );
@@ -196,6 +204,8 @@ void app_main()
     dp.tps = 0
   };
   xQueueOverwrite( current_dp_queue, &dp );
+
+
 
   // start daq timer and tasks
   daq_timer_init();
