@@ -22,16 +22,16 @@ EventGroupHandle_t writing_eg;  // event group to signify writing data
 typedef struct
 {
   uint16_t prim_rpm, sec_rpm;
-  uint16_t torque, temp3, belt_temp, temp2, temp1, load_cell, tps;
-  float i_sp, tps_sp, i_brake; 
+  uint16_t torque, temp3, belt_temp, temp2, temp1, load_cell, tps, i_brake;
+  float i_sp, tps_sp; 
 } data_point;
 
 void print_data_point(data_point *dp)
 {
   printf("primary rpm:\t%" PRIu16       "\tsecondary rpm:\t%" PRIu16    "\ttorque:\t%" PRIu16 "\n"
          "temp3:\t%" PRIu16             "\tbelt temp:\t%" PRIu16        "\ttemp2:\t%" PRIu16 "\n"
-         "brake current:\t%" %5.3f      "\ttemp1:\t%" PRIu16            "\tload cell:\t%" PRIu16 "\n",
-         "throttle position:\t%" PRIu16 "\ti_sp:\t%" %5.3f              "\ttps_sp:\t%" %5.1f,
+         "brake current:\t%" PRIu16     "\ttemp1:\t%" PRIu16            "\tload cell:\t%" PRIu16 "\n",
+         "throttle position:\t%" PRIu16 "\ti_sp:\t%" %5.1f              "\ttps_sp:\t%" %5.1f "\n",
          dp->prim_rpm,                  dp->sec_rpm,                    dp->torque,
          dp->temp3,                     dp->belt_temp,                  dp->temp2,
          dp->i_brake,                   dp->temp1,                      dp->load_cell, 
@@ -66,8 +66,8 @@ static void write_logging_queue_to_sd(void *arg)
     snprintf(buff + (i * line_size), buff_size - (i * line_size),
              "%6" PRIu16 ", %6" PRIu16 ",   %6" PRIu16 ","
              "%6" PRIu16 ", %6" PRIu16 ",   %6" PRIu16 ","
-             "%6" %5.3f  ", %6" PRIu16 ",   %6" PRIu16 "\n"
-             "%6" PRIu16 ", %6" %5.3f ",    %6" %5.1f "\n", 
+             "%6" PRIu16 ", %6" PRIu16 ",   %6" PRIu16 ","
+             "%6" PRIu16 ", %6" %5.1f ",    %6" %5.1f "\n", 
               dp->prim_rpm, dp->sec_rpm,    dp->torque,
               dp->temp3,    dp->belt_temp,  dp->temp2,
               dp->i_brake,  dp->temp1,      dp->load_cell, 

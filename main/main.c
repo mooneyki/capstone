@@ -23,6 +23,9 @@
 #define BSIZE                 100
 #define LAUNCH_THRESHOLD      50 //% of throttle needed for launch
 
+//adc scale, offsets (y = scale*x + offset)
+#define I_BRAKE_SCALE         1
+#define I_BRAKE_OFFSET        0
 
 //globals
 xQueueHandle daq_timer_queue; // queue to time the daq task
@@ -97,7 +100,8 @@ static void daq_task(void *arg)
   int en_eng = 0; 
   int eng = 0;
   int num_profile;
-  int time; 
+  int time;
+  float i_brake_amps = 0; 
 
   data_point dp =
   {
@@ -170,13 +174,15 @@ static void daq_task(void *arg)
     //RECORD DATA
     // adc
     ad7998_read_0( PORT_0, ADC_SLAVE_ADDR, &(dp.torque), &(dp.belt_temp), &(dp.i_brake), &(dp.load_cell) );
+    i_brake_amps = counts_to_volts( ( dp.i_brake ) * I_BRAKE_SCALE ) + I_BRAKE_OFFSET;
+
 
     // rpm measurements
     xQueuePeek( primary_rpm_queue, &(dp.prim_rpm), 0 );
     xQueuePeek( secondary_rpm_queue, &(dp.sec_rpm), 0 );
 
     //update PIDs
-    pid_update ( brake_current_pid, dp.i_sp, dp.i_brake );
+    pid_update ( brake_current_pid, dp.i_sp, i_brake_amps );
 
     //set brake current / throttle
     set_throttle( dp.tps_sp ); 
