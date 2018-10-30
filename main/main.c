@@ -22,11 +22,15 @@
 #define DAQ_TIMER_DIVIDER     100
 #define BSIZE                 100
 
+
+
+//globals
 xQueueHandle daq_timer_queue; // queue to time the daq task
 xQueueHandle logging_queue_1, logging_queue_2, current_dp_queue; // queues to store data points
-
 pid_t throttle_pid;
 pid_t brake_current_pid;
+
+
 
 // interrupt for daq_task timer
 void IRAM_ATTR daq_timer_isr( void *para )
@@ -47,6 +51,8 @@ void IRAM_ATTR daq_timer_isr( void *para )
   // send the counter value to the queue to trigger the daq task
   xQueueOverwriteFromISR( daq_timer_queue, &intr_status, NULL );
 }
+
+
 
 static void daq_timer_init()
 {
@@ -71,6 +77,7 @@ static void daq_timer_init()
   timer_start(DAQ_TIMER_GROUP, DAQ_TIMER_IDX);
 }
 
+
 // task to run the main daq system based on a timer
 static void daq_task(void *arg)
 {
@@ -91,6 +98,14 @@ static void daq_task(void *arg)
   int en_eng = 0; 
   int eng = 0;
   int num_profile;
+
+  data_point dp =
+  {
+    dp.prim_rpm = 0,    dp.sec_rpm = 0,        dp.torque = 0,
+    dp.temp3 = 0,       dp.belt_temp = 0,      dp.temp2 = 0,
+    dp.i_brake = 0,     dp.temp1 = 0,          dp.load_cell = 0, 
+    dp.tps = 0,         dp.i_sp = 0,            dp.tps_sp = 0
+  }; //empty data point  
 
   //module configurations
   // init ADC
@@ -133,22 +148,19 @@ static void daq_task(void *arg)
 
   /** END INIT STAGE **/  
 
+
+
+
+  /** LOOP STAGE **/
+
   while (1)
   {
     // wait for timer alarm
     xQueueReceive( daq_timer_queue, &intr_status, portMAX_DELAY );
    
-    // create data struct and populate with this cycle's data
-    data_point dp =
-    {
-      dp.prim_rpm = 0,    dp.sec_rpm = 0,        dp.torque = 0,
-      dp.temp3 = 0,       dp.belt_temp = 0,      dp.temp2 = 0,
-      dp.i_brake = 0,     dp.temp1 = 0,          dp.load_cell = 0, 
-      dp.tps = 0
-    };
-
+    //RECORD DATA
     // adc
-    ad7998_read_0( PORT_0, ADC_SLAVE_ADDR, &(dp.torque), ... );
+    ad7998_read_0( PORT_0, ADC_SLAVE_ADDR, &(dp.torque), &(dp.belt_temp), &(dp.i_brake), &(dp.load_cell) );
 
     // rpm measurements
     xQueuePeek( primary_rpm_queue, &(dp.prim_rpm), 0 );
@@ -182,6 +194,9 @@ static void daq_task(void *arg)
       xQueueReset( current_logging_queue );
     }
   }
+
+  /** END LOOP STAGE **/
+
   // per FreeRTOS, tasks MUST be deleted before breaking out of its implementing funciton
   vTaskDelete(NULL);
 }
@@ -201,11 +216,9 @@ void app_main()
     dp.prim_rpm = 0,    dp.sec_rpm = 0,        dp.torque = 0,
     dp.temp3 = 0,       dp.belt_temp = 0,      dp.temp2 = 0,
     dp.i_brake = 0,     dp.temp1 = 0,          dp.load_cell = 0, 
-    dp.tps = 0
+    dp.tps = 0,         dp.i_sp = 0,           dp.tps_sp = 0
   };
   xQueueOverwrite( current_dp_queue, &dp );
-
-
 
   // start daq timer and tasks
   daq_timer_init();
