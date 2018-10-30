@@ -24,7 +24,7 @@ struct pid_controller
 typedef struct pid_controller *pid_t;
 
 
-void pid_update ( pid_t pid, int sp, int pv )
+void pid_update ( pid_t pid, float sp, float pv )
 {
 	pid->old_error = pid->error; 
 	pid->error = sp - pv;
@@ -66,6 +66,23 @@ void init_pid ( pid_t pid, float kp, float ki, float kd, float windupGuard, floa
 	//bounds
 	pid->windupGuard = windupGuard; 
 	pid->outputMax = outputMax;	
+}
+
+void reset_pid (pid_t pid ) 
+{
+	pid->error = 0; 
+	pid->old_error = 0;
+	pid->output = 0; 
+	pid->P = 0;
+	pid->I = 0;
+	pid->D = 0;	
+}
+
+float fetch_sp ( int t, float profile[] )
+{
+	float sp; 
+	sp = profile[t];
+	return sp; 
 }
 
 // // EACH LOOP ITERATION: 

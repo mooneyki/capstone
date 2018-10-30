@@ -21,13 +21,12 @@
 #define DAQ_TIMER_HZ          1000           // frequency of the daq timer in Hz
 #define DAQ_TIMER_DIVIDER     100
 #define BSIZE                 100
-
+#define LAUNCH_THRESHOLD      50 //% of throttle needed for launch
 
 
 //globals
 xQueueHandle daq_timer_queue; // queue to time the daq task
 xQueueHandle logging_queue_1, logging_queue_2, current_dp_queue; // queues to store data points
-pid_t throttle_pid;
 pid_t brake_current_pid;
 
 
@@ -91,20 +90,21 @@ static void daq_task(void *arg)
   char buffer[BSIZE];
   FILE *fp;
   char *field;
-  float i_sp[BSIZE]; //brake current set point (amps)
+  float i_sp[BSIZE]; //brake current set point (0-100%)
   float tps_sp[BSIZE]; //throttle position set point (0-100%)
   int i = 0;
   int j = 0;
   int en_eng = 0; 
   int eng = 0;
   int num_profile;
+  int time; 
 
   data_point dp =
   {
     dp.prim_rpm = 0,    dp.sec_rpm = 0,        dp.torque = 0,
     dp.temp3 = 0,       dp.belt_temp = 0,      dp.temp2 = 0,
     dp.i_brake = 0,     dp.temp1 = 0,          dp.load_cell = 0, 
-    dp.tps = 0,         dp.i_sp = 0,            dp.tps_sp = 0
+    dp.tps = 0,         dp.i_sp = 0,           dp.tps_sp = 0
   }; //empty data point  
 
   //module configurations
@@ -120,8 +120,7 @@ static void daq_task(void *arg)
   configure_gpio();
 
   //init PIDs
-  init_pid ( throttle_pid, 0, 0, 0, 0, 0 ); 
-  init_pid ( brake_current_pid, 0, 0, 0, 0, 0 );
+  init_pid ( brake_current_pid, 0, 0.1, 0, 10, 100 );
 
   //default states
   ebrake_set();
@@ -158,6 +157,16 @@ static void daq_task(void *arg)
     // wait for timer alarm
     xQueueReceive( daq_timer_queue, &intr_status, portMAX_DELAY );
    
+    //get new set points
+    dp.i_sp = fetch_sp ( idx, i_sp );
+    dp.tps_sp = fetch_sp ( idx, tps_sp );
+
+    //e-brake release
+    if ( dp.tps_sp > LAUNCH_THRESHOLD )
+    {
+      ebrake_release();
+    }
+
     //RECORD DATA
     // adc
     ad7998_read_0( PORT_0, ADC_SLAVE_ADDR, &(dp.torque), &(dp.belt_temp), &(dp.i_brake), &(dp.load_cell) );
@@ -166,8 +175,12 @@ static void daq_task(void *arg)
     xQueuePeek( primary_rpm_queue, &(dp.prim_rpm), 0 );
     xQueuePeek( secondary_rpm_queue, &(dp.sec_rpm), 0 );
 
-    // push struct to current dp queue for display
-    xQueueOverwrite( current_dp_queue, &dp );
+    //update PIDs
+    pid_update ( brake_current_pid, dp.i_sp, dp.i_brake );
+
+    //set brake current / throttle
+    set_throttle( dp.tps_sp ); 
+    set_brake_duty( brake_current_pid->output ); 
 
     // push struct to logging queue
     // if the queue is full, switch queues and send the full for writing to SD
