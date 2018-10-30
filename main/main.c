@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "esp_types.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -18,6 +20,7 @@
 #define DAQ_TIMER_IDX         0              // index of daq timer
 #define DAQ_TIMER_HZ          1000           // frequency of the daq timer in Hz
 #define DAQ_TIMER_DIVIDER     100
+#define BSIZE                 100
 
 xQueueHandle daq_timer_queue; // queue to time the daq task
 xQueueHandle logging_queue_1, logging_queue_2, current_dp_queue; // queues to store data points
@@ -73,7 +76,37 @@ static void daq_task(void *arg)
 {
   // vars
   uint32_t intr_status;
-  
+  char filename[] = "brake_profile_0.csv";
+  char buffer[BSIZE];
+  FILE *fp;
+  char *field;
+  float i_sp[BSIZE];
+  int i = 0;
+
+  //LOAD BRAKE PROFILE FROM SCV FILE
+  /* open the CSV file */
+  fp = fopen(filename,"r");
+  if( fp == NULL)
+  {
+    printf("Unable to open file '%s'\n",filename);
+    exit(1);
+  }
+
+  /* parse data */
+  while(fgets(buffer,BSIZE,fp))
+  {
+    field=strtok(buffer,","); /* get value */
+    i_sp[i]=atof(field);
+    
+    /* display the result in the proper format */
+    printf("High: %.1f\n",
+        i_sp[i]);
+        
+    i++;
+  }
+
+  fclose(fp); /* close file */
+
   // init ADC
   i2c_master_config( PORT_0, FAST_MODE_PLUS, I2C_MASTER_0_SDA_IO, I2C_MASTER_0_SCL_IO );
   ad7998_init( PORT_0, ADC_SLAVE_ADDR, CHANNEL_SELECTION_0 ); //init adc
@@ -169,3 +202,7 @@ void app_main()
 
   xTaskCreatePinnedToCore( daq_task, "daq_task", 2048, NULL, (configMAX_PRIORITIES-1), NULL, 0 );
 }
+
+
+
+
