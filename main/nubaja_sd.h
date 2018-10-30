@@ -22,15 +22,15 @@ EventGroupHandle_t writing_eg;  // event group to signify writing data
 typedef struct
 {
   uint16_t prim_rpm, sec_rpm;
-  int16_t torque, temp3, belt_temp, temp2, i_brake, temp1, load_cell, tps;
+  uint16_t torque, temp3, belt_temp, temp2, i_brake, temp1, load_cell, tps;
 } data_point;
 
 void print_data_point(data_point *dp)
 {
-  printf("primary rpm:\t%" PRIu16     "\tsecondary rpm:\t%" PRIu16    "\ttorque:\t%" PRId16 "\n"
-         "temp3:\t%" PRId16           "\tbelt temp:\t%" PRId16        "\ttemp2:\t%" PRId16 "\n"
-         "brake current:\t%" PRId16   "\ttemp1:\t%" PRId16            "\tload cell:\t%" PRId16 "\n",
-         "throttle position:\t%" PRId16,
+  printf("primary rpm:\t%" PRIu16     "\tsecondary rpm:\t%" PRIu16    "\ttorque:\t%" PRIu16 "\n"
+         "temp3:\t%" PRIu16           "\tbelt temp:\t%" PRIu16        "\ttemp2:\t%" PRIu16 "\n"
+         "brake current:\t%" PRIu16   "\ttemp1:\t%" PRIu16            "\tload cell:\t%" PRIu16 "\n",
+         "throttle position:\t%" PRIu16,
          dp->prim_rpm,                dp->sec_rpm,                    dp->torque,
          dp->temp3,                   dp->belt_temp,                  dp->temp2,
          dp->i_brake,                 dp->temp1,                      dp->load_cell, 
@@ -63,9 +63,9 @@ static void write_logging_queue_to_sd(void *arg)
   while (xQueueReceive(lq, &dp, 0) != pdFALSE)
   {
     snprintf(buff + (i * line_size), buff_size - (i * line_size),
-             "%6" PRIu16 ", %6" PRIu16 ",   %6" PRId16 ","
-             "%6" PRId16 ", %6" PRId16 ",   %6" PRId16 ","
-             "%6" PRId16 ", %6" PRId16 ",   %6" PRId16 "\n",
+             "%6" PRIu16 ", %6" PRIu16 ",   %6" PRIu16 ","
+             "%6" PRIu16 ", %6" PRIu16 ",   %6" PRIu16 ","
+             "%6" PRIu16 ", %6" PRIu16 ",   %6" PRIu16 "\n",
               dp->prim_rpm, dp->sec_rpm,    dp->torque,
               dp->temp3,    dp->belt_temp,  dp->temp2,
               dp->i_brake,  dp->temp1,      dp->load_cell, 

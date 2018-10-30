@@ -25,11 +25,6 @@ xQueueHandle secondary_rpm_queue;                    // queue for wheel speed va
 double last_prim_rpm_time = 0;
 double last_sec_rpm_time = 0;
 
-// button event group bits
-#define ENABLE_LOGGING_BIT  (1 << 0)
-#define DATA_TO_LOG_BIT     (1 << 1)
-#define CYCLE_DISPLAY_BIT   (1 << 2)
-
 void flasher_on()
 {
   gpio_set_level(FLASHER_GPIO, 1);
@@ -92,7 +87,7 @@ static void speed_timer_init()
 {
   // select and initialize basic parameters of the timer
   timer_config_t config;
-  config.divider = SPEED_TIMER_DIVIDER;
+  config.divider = RPM_TIMER_DIVIDER;
   config.counter_dir = TIMER_COUNT_UP;
   config.counter_en = TIMER_PAUSE;
   config.alarm_en = TIMER_ALARM_DIS;
@@ -101,9 +96,9 @@ static void speed_timer_init()
   timer_init(SPEED_TIMER_GROUP, SPEED_TIMER_IDX, &config);
 
   // timer's counter will initially start from value below
-  timer_set_counter_value(SPEED_TIMER_GROUP, SPEED_TIMER_IDX, 0x00000000ULL);
+  timer_set_counter_value(RPM_TIMER_GROUP, RPM_TIMER_IDX, 0x00000000ULL);
 
-  timer_start(SPEED_TIMER_GROUP, SPEED_TIMER_IDX);
+  timer_start(RPM_TIMER_GROUP, RPM_TIMER_IDX);
 }
 
 // configure gpio pins for input and ISRs, and the flasher pin for output

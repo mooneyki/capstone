@@ -20,8 +20,6 @@ struct pid_controller
 	//bounds
 	float windupGuard; 
 	float outputMax;
-
-
 };
 typedef struct pid_controller *pid_t;
 
@@ -69,11 +67,6 @@ void init_pid ( pid_t pid, float kp, float ki, float kd, float windupGuard, floa
 	pid->windupGuard = windupGuard; 
 	pid->outputMax = outputMax;	
 }
-
-// // USE - HOW THIS WOULD BE IMPLEMENTED TO CONTROL THROTTLE ACTUATOR
-// int RPM; 
-// int sp; 
-// pid_t throttle; 
 
 // // EACH LOOP ITERATION: 
 // sp = fetch_sp(RPM);
