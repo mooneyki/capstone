@@ -26,6 +26,7 @@
 //adc scale, offsets (y = scale*x + offset)
 #define I_BRAKE_SCALE         1
 #define I_BRAKE_OFFSET        0
+#define I_BRAKE_MAX           3.6
 
 //globals
 xQueueHandle daq_timer_queue; // queue to time the daq task
@@ -102,6 +103,7 @@ static void daq_task(void *arg)
   int num_profile;
   int time;
   float i_brake_amps = 0; 
+  float i_brake_duty = 0; 
 
   data_point dp =
   {
@@ -132,6 +134,88 @@ static void daq_task(void *arg)
   flasher_off(); 
   set_throttle(0); //no throttle
   set_brake_duty(0); //no braking 
+
+  //choose test
+  printf("Test selection. Enter profile number.\n");
+  printf("Profile 1 - acceleration w/ launch.\n");
+  printf("Profile 2 - acceleration w/o launch.\n");
+  printf("Profile 3 - hill climb.\n");
+  scanf("%d", &num_profile);
+
+  switch( num_profile ) 
+  {
+    case 1:
+      filename_i = "brake_current_profile_1.csv";
+      filename_t = "throttle_profile_1.csv";
+      break; 
+
+    case 2:
+      filename_i = "brake_current_profile_2.csv";
+      filename_t = "throttle_profile_2.csv";
+      break; 
+
+    case 3:
+      filename_i = "brake_current_profile_3.csv";
+      filename_t = "throttle_profile_3.csv";
+      break;
+
+    default: 
+      filename_i = NULL;
+      filename_t = NULL;
+  }
+
+  //LOAD BRAKE PROFILE FROM CSV FILE
+  /* open the CSV file */
+  fp = fopen(filename_i,"r");
+  if( fp == NULL)
+  {
+    printf("Unable to open file '%s'\n",filename);
+    exit(1);
+  }
+
+  /* parse data */
+  while(fgets(buffer,BSIZE,fp))
+  {
+    field=strtok(buffer,","); /* get value */
+    i_sp[i]=atof(field);
+    
+    /* display the result in the proper format */
+    printf("brake current sp: %.1f\n",
+        i_sp[i]);
+        
+    i++;
+  }
+
+  fclose(fp); /* close file */
+
+  //LOAD THROTTLE PROFILE FROM CSV FILE
+  /* open the CSV file */
+  fp = fopen(filename_t,"r");
+  if( fp == NULL)
+  {
+    printf("Unable to open file '%s'\n",filename);
+    exit(1);
+  }
+
+  /* parse data */
+  while(fgets(buffer,BSIZE,fp))
+  {
+    field=strtok(buffer,","); /* get value */
+    tps_sp[j]=atof(field);
+    
+    /* display the result in the proper format */
+    printf("throttle position sp: %.1f\n",
+        tps_sp[j]);
+
+    j++;
+  }
+
+  fclose(fp); /* close file */  
+
+  if (j != i) {
+    printf("Unmatched throttle and brake profiles.\n"); 
+    exit(1);
+  }
 
   //prompt user to start engine
   while ( !en_eng ) 
@@ -174,15 +258,15 @@ static void daq_task(void *arg)
     //RECORD DATA
     // adc
     ad7998_read_0( PORT_0, ADC_SLAVE_ADDR, &(dp.torque), &(dp.belt_temp), &(dp.i_brake), &(dp.load_cell) );
-    i_brake_amps = counts_to_volts( ( dp.i_brake ) * I_BRAKE_SCALE ) + I_BRAKE_OFFSET;
-
+    i_brake_amps = ( counts_to_volts ( dp.i_brake ) * I_BRAKE_SCALE )  + I_BRAKE_OFFSET; //ADC counts to amps
+    i_brake_duty = 100 * ( i_brake_amps / I_BRAKE_MAX ); //convert brake current in amps to duty cycle from 0-100%
 
     // rpm measurements
     xQueuePeek( primary_rpm_queue, &(dp.prim_rpm), 0 );
     xQueuePeek( secondary_rpm_queue, &(dp.sec_rpm), 0 );
 
     //update PIDs
-    pid_update ( brake_current_pid, dp.i_sp, i_brake_amps );
+    pid_update ( brake_current_pid, dp.i_sp, i_brake_duty );
 
     //set brake current / throttle
     set_throttle( dp.tps_sp ); 
