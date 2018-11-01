@@ -60,10 +60,10 @@ void ad7998_init( int port_num, int slave_address, int channel_selection )
 
 //read function for channel selection 0
 void ad7998_read_0 ( int port_num, int slave_address, 
-	uint16_t *ch1; 
-	uint16_t *ch3;
-	uint16_t *ch5;
-	uint16_t *ch7; )
+	uint16_t *ch1, 
+	uint16_t *ch3,
+	uint16_t *ch5,
+	uint16_t *ch7 )
 {
 	uint8_t addr_pointer = CMD_MODE; //cmd mode
 	i2c_read_2_bytes_4( port_num, slave_address, addr_pointer, 
@@ -72,10 +72,10 @@ void ad7998_read_0 ( int port_num, int slave_address,
 
 //read function for channel selection 1
 void ad7998_read_1 ( int port_num, int slave_address, 
-	uint16_t *ch2; 
-	uint16_t *ch3;
-	uint16_t *ch4;
-	uint16_t *ch6; )
+	uint16_t *ch2, 
+	uint16_t *ch3,
+	uint16_t *ch4,
+	uint16_t *ch6 )
 {
 	uint8_t addr_pointer = CMD_MODE; //cmd mode
 	i2c_read_2_bytes_4( port_num, slave_address, addr_pointer, 
@@ -87,7 +87,7 @@ void ad7998_read_3 ( int port_num, int slave_address,
 	uint16_t *ch1, 
 	uint16_t *ch2,
 	uint16_t *ch3,
-	uint16_t *ch4 
+	uint16_t *ch4, 
 	uint16_t *ch5, 
 	uint16_t *ch6,
 	uint16_t *ch7,

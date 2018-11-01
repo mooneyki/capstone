@@ -21,10 +21,10 @@ struct pid_controller
 	float windupGuard; 
 	float outputMax;
 };
-typedef struct pid_controller *pid_t;
+typedef struct pid_controller *pid_ctrl_t;
 
 
-void pid_update ( pid_t pid, float sp, float pv )
+void pid_update ( pid_ctrl_t pid, float sp, float pv )
 {
 	pid->old_error = pid->error; 
 	pid->error = sp - pv;
@@ -47,7 +47,7 @@ void pid_update ( pid_t pid, float sp, float pv )
 
 }
 
-void init_pid ( pid_t pid, float kp, float ki, float kd, float windupGuard, float outputMax ) 
+void init_pid ( pid_ctrl_t pid, float kp, float ki, float kd, float windupGuard, float outputMax ) 
 {
 	// measurements and input / output variables
 	pid->error = 0; 
@@ -68,7 +68,7 @@ void init_pid ( pid_t pid, float kp, float ki, float kd, float windupGuard, floa
 	pid->outputMax = outputMax;	
 }
 
-void reset_pid (pid_t pid ) 
+void reset_pid (pid_ctrl_t pid ) 
 {
 	pid->error = 0; 
 	pid->old_error = 0;

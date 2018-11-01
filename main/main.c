@@ -20,10 +20,10 @@
 #define DAQ_TIMER_IDX         0              // index of daq timer
 #define DAQ_TIMER_HZ          1000           // frequency of the daq timer in Hz
 #define DAQ_TIMER_DIVIDER     100
-#define BSIZE                 100
+#define BSIZE                 10000
 #define LAUNCH_THRESHOLD      50 //% of throttle needed for launch
 
-//adc scale, offsets (y = scale*x + offset)
+//adc scales, offsets (y = scale*x + offset)
 #define I_BRAKE_SCALE         1
 #define I_BRAKE_OFFSET        0
 #define I_BRAKE_MAX           3.6
@@ -31,7 +31,7 @@
 //globals
 xQueueHandle daq_timer_queue; // queue to time the daq task
 xQueueHandle logging_queue_1, logging_queue_2, current_dp_queue; // queues to store data points
-pid_t brake_current_pid;
+pid_ctrl_t brake_current_pid;
 
 
 
@@ -89,19 +89,23 @@ static void daq_task(void *arg)
 
   // vars
   uint32_t intr_status;
-  char filename_i[];
-  char filename_t[];
+  char filename_i[100];
+  char filename_t[100];
   char buffer[BSIZE];
   FILE *fp;
   char *field;
-  float i_sp[BSIZE]; //brake current set point (0-100%)
-  float tps_sp[BSIZE]; //throttle position set point (0-100%)
+  float i_sp[BSIZE]; //brake current set point array (0-100%)
+  float tps_sp[BSIZE]; //throttle position set point array (0-100%)
   int i = 0;
   int j = 0;
+  
+  //flags
   int en_eng = 0; 
   int eng = 0;
   int num_profile;
-  int time;
+  int idx = 0;
+
+  //quantities
   float i_brake_amps = 0; 
   float i_brake_duty = 0; 
 
@@ -145,23 +149,19 @@ static void daq_task(void *arg)
   switch( num_profile ) 
   {
     case 1:
-      filename_i = "brake_current_profile_1.csv";
-      filename_t = "throttle_profile_1.csv";
+      strcpy(filename_i, "brake_current_profile_1.csv");
+      strcpy(filename_t, "throttle_profile_1.csv");
       break; 
 
     case 2:
-      filename_i = "brake_current_profile_2.csv";
-      filename_t = "throttle_profile_2.csv";
+      strcpy(filename_i, "brake_current_profile_2.csv");
+      strcpy(filename_t, "throttle_profile_2.csv");
       break; 
 
     case 3:
-      filename_i = "brake_current_profile_3.csv";
-      filename_t = "throttle_profile_3.csv";
+      strcpy(filename_i, "brake_current_profile_3.csv");
+      strcpy(filename_t, "throttle_profile_3.csv");
       break;
-
-    default: 
-      filename_i = NULL;
-      filename_t = NULL;
   }
 
   //LOAD BRAKE PROFILE FROM CSV FILE
@@ -169,7 +169,7 @@ static void daq_task(void *arg)
   fp = fopen(filename_i,"r");
   if( fp == NULL)
   {
-    printf("Unable to open file '%s'\n",filename);
+    printf("Unable to open file '%s'\n",filename_i);
     exit(1);
   }
 
@@ -193,7 +193,7 @@ static void daq_task(void *arg)
   fp = fopen(filename_t,"r");
   if( fp == NULL)
   {
-    printf("Unable to open file '%s'\n",filename);
+    printf("Unable to open file '%s'\n",filename_t);
     exit(1);
   }
 
@@ -296,6 +296,8 @@ static void daq_task(void *arg)
       // queue won't be empty if a writing task overlap occurred
       xQueueReset( current_logging_queue );
     }
+
+    idx++;
   }
 
   /** END LOOP STAGE **/

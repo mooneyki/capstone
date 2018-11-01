@@ -193,10 +193,11 @@ int i2c_read_2_bytes_4(int port_num, uint8_t slave_address, int reg,
 // read eight consecutive pairs of 2 bytes from an I2C device
 int i2c_read_2_bytes_8(int port_num, uint8_t slave_address, int reg,
                        uint16_t *data_0, uint16_t *data_1, uint16_t *data_2, uint16_t *data_3,
-                       uint16_t *data_4, uint16_t *data_4, uint16_t *data_6, uint16_t *data_7)
+                       uint16_t *data_4, uint16_t *data_5, uint16_t *data_6, uint16_t *data_7)
 {
   int ret;
   uint8_t data_0_h, data_0_l, data_1_h, data_1_l, data_2_h, data_2_l, data_3_h, data_3_l;
+  uint8_t data_4_h, data_4_l, data_5_h, data_5_l, data_6_h, data_6_l, data_7_h, data_7_l;
 
   i2c_cmd_handle_t cmd = i2c_cmd_link_create();
   i2c_master_start(cmd);

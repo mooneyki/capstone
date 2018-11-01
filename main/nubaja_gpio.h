@@ -93,7 +93,7 @@ static void speed_timer_init()
   config.alarm_en = TIMER_ALARM_DIS;
   config.intr_type = TIMER_INTR_LEVEL;
   config.auto_reload = TIMER_AUTORELOAD_DIS;
-  timer_init(SPEED_TIMER_GROUP, SPEED_TIMER_IDX, &config);
+  timer_init(RPM_TIMER_GROUP, RPM_TIMER_IDX, &config);
 
   // timer's counter will initially start from value below
   timer_set_counter_value(RPM_TIMER_GROUP, RPM_TIMER_IDX, 0x00000000ULL);
