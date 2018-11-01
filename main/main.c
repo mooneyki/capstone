@@ -102,6 +102,7 @@ static void daq_task(void *arg)
   //flags
   int en_eng = 0; 
   int eng = 0;
+  int run = 1;
   int num_profile;
   int idx = 0;
 
@@ -149,18 +150,18 @@ static void daq_task(void *arg)
   switch( num_profile ) 
   {
     case 1:
-      strcpy(filename_i, "brake_current_profile_1.csv");
-      strcpy(filename_t, "throttle_profile_1.csv");
+      strcpy(filename_i, "/sdcard/profiles/brake_current_profile_1.csv");
+      strcpy(filename_t, "/sdcard/profiles/throttle_profile_1.csv");
       break; 
 
     case 2:
-      strcpy(filename_i, "brake_current_profile_2.csv");
-      strcpy(filename_t, "throttle_profile_2.csv");
+      strcpy(filename_i, "/sdcard/profiles/brake_current_profile_2.csv");
+      strcpy(filename_t, "/sdcard/profiles/throttle_profile_2.csv");
       break; 
 
     case 3:
-      strcpy(filename_i, "brake_current_profile_3.csv");
-      strcpy(filename_t, "throttle_profile_3.csv");
+      strcpy(filename_i, "/sdcard/profiles/brake_current_profile_3.csv");
+      strcpy(filename_t, "/sdcard/profiles/throttle_profile_3.csv");
       break;
   }
 
@@ -180,10 +181,10 @@ static void daq_task(void *arg)
     i_sp[i]=atof(field);
     
     /* display the result in the proper format */
-    printf("brake current sp: %.1f\n",
+    printf("brake current sp: %5.1f\n",
         i_sp[i]);
         
-    i++;
+    ++i;
   }
 
   fclose(fp); /* close file */
@@ -204,10 +205,10 @@ static void daq_task(void *arg)
     tps_sp[j]=atof(field);
     
     /* display the result in the proper format */
-    printf("throttle position sp: %.1f\n",
+    printf("throttle position sp: %5.1f\n",
         tps_sp[j]);
 
-    j++;
+    ++j;
   }
 
   fclose(fp); /* close file */  
@@ -240,11 +241,16 @@ static void daq_task(void *arg)
 
   /** LOOP STAGE **/
 
-  while (1)
+  while ( run )
   {
     // wait for timer alarm
     xQueueReceive( daq_timer_queue, &intr_status, portMAX_DELAY );
    
+    //check if test is done (profiles ended)
+    if ( idx == i ) {
+        run = 0;
+    }
+
     //get new set points
     dp.i_sp = fetch_sp ( idx, i_sp );
     dp.tps_sp = fetch_sp ( idx, tps_sp );
@@ -297,10 +303,17 @@ static void daq_task(void *arg)
       xQueueReset( current_logging_queue );
     }
 
-    idx++;
+    ++idx;
   }
 
   /** END LOOP STAGE **/
+  
+  //restore defaults, safe system shutdown
+  set_throttle(0); //no throttle
+  set_brake_duty(0); //no braking 
+  engine_off();
+  flasher_off();
+  ebrake_set();
 
   // per FreeRTOS, tasks MUST be deleted before breaking out of its implementing funciton
   vTaskDelete(NULL);
