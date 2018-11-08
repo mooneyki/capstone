@@ -12,12 +12,12 @@
 #define FLASHER_GPIO          32             // flashing indicator relay control
 #define GPIO_INPUT_PIN_SEL    ((1ULL<<PRIMARY_GPIO) | (1ULL<<SECONDARY_GPIO))
 
-#define RPM_TIMER_GROUP     TIMER_GROUP_1  // group of speed timer
-#define RPM_TIMER_IDX       0              // index of speed timer
-#define RPM_TIMER_DIVIDER   100            // speed timer prescale divider
+#define RPM_TIMER_GROUP       TIMER_GROUP_1  // group of speed timer
+#define RPM_TIMER_IDX         0              // index of speed timer
+#define RPM_TIMER_DIVIDER     100            // speed timer prescale divider
 
-#define MAX_PRIMARY_RPM       4500           // cut off wacky high errors
-#define MAX_SECONDARY_RPM     4500            // cut off wacky high errors
+#define MAX_PRIMARY_RPM       4200           // cut off wacky high errors. max engine rpm 3800
+#define MAX_SECONDARY_RPM     4500           // cut off wacky high errors. max sec rpm 3800 / 0.9 = ~4200
 
 xQueueHandle primary_rpm_queue;                    // queue for engine rpm values
 xQueueHandle secondary_rpm_queue;                    // queue for wheel speed values

@@ -291,8 +291,9 @@ static void daq_task(void *arg)
   /** END LOOP STAGE **/
   
   //restore defaults, safe system shutdown
-  set_throttle(0); //no throttle
-  set_brake_duty(0); //no braking 
+  set_throttle( 0 ); //no throttle
+  set_brake_duty( 0 ); //no braking 
+  reset_pid( brake_current_pid );
   engine_off();
   flasher_off();
   ebrake_set();
