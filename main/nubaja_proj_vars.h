@@ -24,10 +24,27 @@
 #define MAX_BELT_TEMP			200 //deg F
 #define MAX_CVT_AMBIENT 		200 //deg F
 
+//struct for consolidating various flags, key quantities, etc
+struct control 
+{
+	//flags
+	int en_eng; 
+	int eng;
+	int run;
+	int num_profile;
+	int idx;
+
+	//quantities
+	float i_brake_amps; 
+	float i_brake_duty; 
+};
+typedef struct control control_t;
+
 //globals
 xQueueHandle daq_timer_queue; // queue to time the daq task
 xQueueHandle logging_queue_1, logging_queue_2, current_dp_queue; // queues to store data points
 pid_ctrl_t brake_current_pid;
 fault_t ctrl_faults; 
+control_t main_ctrl; 
 
 #endif

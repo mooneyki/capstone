@@ -83,15 +83,14 @@ static void daq_task(void *arg)
   int j = 0;
   
   //flags
-  int en_eng = 0; 
-  int eng = 0;
-  int run = 1;
-  int num_profile;
-  int idx = 0;
+  main_ctrl.en_eng = 0; 
+  main_ctrl.eng = 0;
+  main_ctrl.run = 1;
+  main_ctrl.idx = 0;
 
   //quantities
-  float i_brake_amps = 0; 
-  float i_brake_duty = 0; 
+  main_ctrl.i_brake_amps = 0; 
+  main_ctrl.i_brake_duty = 0; 
 
   data_point dp =
   {
@@ -131,9 +130,9 @@ static void daq_task(void *arg)
   printf("Profile 1 - acceleration w/ launch.\n");
   printf("Profile 2 - acceleration w/o launch.\n");
   printf("Profile 3 - hill climb.\n");
-  scanf("%d", &num_profile);
+  scanf("%d", &main_ctrl.num_profile);
 
-  switch( num_profile ) 
+  switch( main_ctrl.num_profile ) 
   {
     case 1:
       strcpy(filename_i, "/sdcard/profiles/brake_current_profile_1.csv");
@@ -205,17 +204,17 @@ static void daq_task(void *arg)
   }
 
   //prompt user to start engine
-  while ( !en_eng ) 
+  while ( !main_ctrl.en_eng ) 
   {
     printf("Start engine?\n");
-    scanf("%d", &en_eng);
+    scanf("%d", &main_ctrl.en_eng);
   }
   engine_on();
 
   //prompt user to confirm engine running and warm
-  while ( !eng ) {
+  while ( !main_ctrl.eng ) {
     printf("Engine running?\n");
-    scanf("%d", &eng);    
+    scanf("%d", &main_ctrl.eng);    
   }
 
   flasher_on();
@@ -227,19 +226,19 @@ static void daq_task(void *arg)
 
   /** LOOP STAGE **/
 
-  while ( run )
+  while ( main_ctrl.run )
   {
     // wait for timer alarm
     xQueueReceive( daq_timer_queue, &intr_status, portMAX_DELAY );
    
     //check if test is done (profiles ended) or if test faulted
-    if ( ( idx == i ) | ( ctrl_faults->trip ) ) {
-        run = 0;
+    if ( ( main_ctrl.idx == i ) | ( ctrl_faults->trip ) ) {
+        main_ctrl.run = 0;
     }
 
     //get new set points
-    dp.i_sp = fetch_sp ( idx, i_sp );
-    dp.tps_sp = fetch_sp ( idx, tps_sp );
+    dp.i_sp = fetch_sp ( main_ctrl.idx, i_sp );
+    dp.tps_sp = fetch_sp ( main_ctrl.idx, tps_sp );
 
     //e-brake release
     if ( dp.tps_sp > LAUNCH_THRESHOLD )
@@ -250,22 +249,22 @@ static void daq_task(void *arg)
     //RECORD DATA
     // adc
     ad7998_read_0( PORT_0, ADC_SLAVE_ADDR, &(dp.torque), &(dp.belt_temp), &(dp.i_brake), &(dp.load_cell) );
-    i_brake_amps = ( counts_to_volts ( dp.i_brake ) * I_BRAKE_SCALE )  + I_BRAKE_OFFSET; //ADC counts to amps
-    i_brake_duty = 100 * ( i_brake_amps / I_BRAKE_MAX ); //convert brake current in amps to duty cycle from 0-100%
+    main_ctrl.i_brake_amps = ( counts_to_volts ( dp.i_brake ) * I_BRAKE_SCALE )  + I_BRAKE_OFFSET; //ADC counts to amps
+    main_ctrl.i_brake_duty = 100 * ( main_ctrl.i_brake_amps / I_BRAKE_MAX ); //convert brake current in amps to duty cycle from 0-100%
 
     // rpm measurements
     xQueuePeek( primary_rpm_queue, &(dp.prim_rpm), 0 );
     xQueuePeek( secondary_rpm_queue, &(dp.sec_rpm), 0 );
 
     //update PIDs
-    pid_update ( brake_current_pid, dp.i_sp, i_brake_duty );
+    pid_update ( brake_current_pid, dp.i_sp, main_ctrl.i_brake_duty );
 
     //set brake current / throttle
     set_throttle( dp.tps_sp ); 
     set_brake_duty( brake_current_pid->output ); 
 
     //check for faults
-    if ( i_brake_amps > MAX_I_BRAKE ) {
+    if ( main_ctrl.i_brake_amps > MAX_I_BRAKE ) {
       ctrl_faults->trip = 1;
       ctrl_faults->overcurrent_fault = 1;      
     }
@@ -295,7 +294,7 @@ static void daq_task(void *arg)
       xQueueReset( current_logging_queue );
     }
 
-    ++idx;
+    ++main_ctrl.idx;
   }
 
   /** END LOOP STAGE **/
