@@ -1,9 +1,6 @@
 #ifndef NUBAJA_PROJ_VARS_H_
 #define NUBAJA_PROJ_VARS_H_
 
-#include "nubaja_pid.h"
-#include "nubaja_fault.h"
-
 //timing
 #define DAQ_TIMER_GROUP       	TIMER_GROUP_0  // group of daq timer
 #define DAQ_TIMER_IDX         	0              // index of daq timer
@@ -39,12 +36,5 @@ struct control
 	float i_brake_duty; 
 };
 typedef struct control control_t;
-
-//globals
-xQueueHandle daq_timer_queue; // queue to time the daq task
-xQueueHandle logging_queue_1, logging_queue_2, current_dp_queue; // queues to store data points
-pid_ctrl_t brake_current_pid;
-fault_t ctrl_faults; 
-control_t main_ctrl; 
 
 #endif

@@ -18,6 +18,13 @@
 #include "nubaja_pid.h"
 #include "nubaja_pwm.h"
 
+//globals
+xQueueHandle daq_timer_queue; // queue to time the daq task
+xQueueHandle logging_queue_1, logging_queue_2, current_dp_queue; // queues to store data points
+pid_ctrl_t brake_current_pid;
+fault_t ctrl_faults; 
+control_t main_ctrl;
+
 // interrupt for daq_task timer
 void IRAM_ATTR daq_timer_isr( void *para )
 {
