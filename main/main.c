@@ -11,6 +11,7 @@
 
 #include "nubaja_proj_vars.h"
 #include "nubaja_gpio.h"
+#include "nubaja_fault.h"
 #include "nubaja_i2c.h"
 #include "nubaja_ad7998.h"
 #include "nubaja_sd.h"
@@ -114,6 +115,9 @@ static void daq_task(void *arg)
 
   //init PIDs
   init_pid ( brake_current_pid, 0, 0.1, 0, 10, 100 );
+
+  //init faults
+  clear_faults ( ctrl_faults );
 
   //default states
   ebrake_set();
@@ -228,8 +232,8 @@ static void daq_task(void *arg)
     // wait for timer alarm
     xQueueReceive( daq_timer_queue, &intr_status, portMAX_DELAY );
    
-    //check if test is done (profiles ended)
-    if ( idx == i ) {
+    //check if test is done (profiles ended) or if test faulted
+    if ( ( idx == i ) | ( ctrl_faults->trip ) ) {
         run = 0;
     }
 
@@ -259,6 +263,12 @@ static void daq_task(void *arg)
     //set brake current / throttle
     set_throttle( dp.tps_sp ); 
     set_brake_duty( brake_current_pid->output ); 
+
+    //check for faults
+    if ( i_brake_amps > MAX_I_BRAKE ) {
+      ctrl_faults->trip = 1;
+      ctrl_faults->overcurrent_fault = 1;      
+    }
 
     // push struct to logging queue
     // if the queue is full, switch queues and send the full for writing to SD
