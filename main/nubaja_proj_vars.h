@@ -4,11 +4,14 @@
 #include "nubaja_pid.h"
 #include "nubaja_fault.h"
 
+//timing
 #define DAQ_TIMER_GROUP       	TIMER_GROUP_0  // group of daq timer
 #define DAQ_TIMER_IDX         	0              // index of daq timer
 #define DAQ_TIMER_HZ          	500           // frequency of the daq timer in Hz
 #define DAQ_TIMER_DIVIDER     	100
 #define BSIZE                 	10000
+
+//ctrl
 #define LAUNCH_THRESHOLD      	50 //% of throttle needed for launch
 
 //adc scales, offsets (y = scale*x + offset)
