@@ -73,7 +73,7 @@ x = [1:num_rows];
 scrsz = get(0,'ScreenSize');
 
 %RPM
-figure('Position',[1 scrsz(4)/2 scrsz(3)/2 scrsz(4)/2])
+figure('Position',[1 scrsz(4)/2-80 scrsz(3)/2 scrsz(4)/2])
 p = plot(x,prim_rpm,x,sec_rpm);
 p(1).Color = [1,0,0];
 p(2).Color = [0,1,0];
@@ -95,7 +95,7 @@ ylabel('Temperature')
 legend('Temp1','Temp2','Temp3','Belt Temp')
 
 %Torques
-figure('Position',[scrsz(3)/2 2*scrsz(4)/3 scrsz(3)/2 scrsz(4)/3])
+figure('Position',[scrsz(3)/2 2*scrsz(4)/3-80 scrsz(3)/2 scrsz(4)/3])
 p = plot(x,torque,x,load_cell);
 p(1).Color = [1,0,0];
 p(2).Color = [0,1,0];
