@@ -137,24 +137,30 @@ static void daq_task(void *arg)
   printf("Profile 1 - acceleration w/ launch.\n");
   printf("Profile 2 - acceleration w/o launch.\n");
   printf("Profile 3 - hill climb.\n");
+  printf("Profile 4 - test.\n");
   scanf("%d", &main_ctrl.num_profile);
 
   switch( main_ctrl.num_profile ) 
   {
     case 1:
-      strcpy(filename_i, "/sdcard/profiles/brake_current_profile_1.csv");
-      strcpy(filename_t, "/sdcard/profiles/throttle_profile_1.csv");
+      strcpy(filename_i, "/sdcard/profiles/brake_current_profile_accel_launch.csv");
+      strcpy(filename_t, "/sdcard/profiles/throttle_profile_accel_launch.csv");
       break; 
 
     case 2:
-      strcpy(filename_i, "/sdcard/profiles/brake_current_profile_2.csv");
-      strcpy(filename_t, "/sdcard/profiles/throttle_profile_2.csv");
+      strcpy(filename_i, "/sdcard/profiles/brake_current_profile_accel.csv");
+      strcpy(filename_t, "/sdcard/profiles/throttle_profile_accel.csv");
       break; 
 
     case 3:
-      strcpy(filename_i, "/sdcard/profiles/brake_current_profile_3.csv");
-      strcpy(filename_t, "/sdcard/profiles/throttle_profile_3.csv");
+      strcpy(filename_i, "/sdcard/profiles/brake_current_profile_hill.csv");
+      strcpy(filename_t, "/sdcard/profiles/throttle_profile_hill.csv");
       break;
+
+    case 4:
+      strcpy(filename_i, "/sdcard/profiles/brake_current_test_profile.csv");
+      strcpy(filename_t, "/sdcard/profiles/throttle_test_profile.csv");
+      break;      
   }
 
   //LOAD BRAKE PROFILE FROM CSV FILE
@@ -173,8 +179,7 @@ static void daq_task(void *arg)
     i_sp[i]=atof(field);
     
     /* display the result in the proper format */
-    printf("brake current sp: %5.1f\n",
-        i_sp[i]);
+    printf("brake current sp: %5.1f\n",i_sp[i]);
         
     ++i;
   }
@@ -197,8 +202,7 @@ static void daq_task(void *arg)
     tps_sp[j]=atof(field);
     
     /* display the result in the proper format */
-    printf("throttle position sp: %5.1f\n",
-        tps_sp[j]);
+    printf("throttle position sp: %5.1f\n",tps_sp[j]);
 
     ++j;
   }
@@ -243,7 +247,7 @@ static void daq_task(void *arg)
         main_ctrl.run = 0;
     }
 
-    //get new set points
+    //get new set points (in the form of 0-100% i.e. duty cycle)
     dp.i_sp = fetch_sp ( main_ctrl.idx, i_sp );
     dp.tps_sp = fetch_sp ( main_ctrl.idx, tps_sp );
 
@@ -278,7 +282,7 @@ static void daq_task(void *arg)
 
     // push struct to logging queue
     // if the queue is full, switch queues and send the full for writing to SD
-    if (xQueueSend( current_logging_queue, &dp, 0) == errQUEUE_FULL )
+    if (xQueueSend( current_logging_queue, &dp, 0 ) == errQUEUE_FULL )
     {
       printf("daq_task -- queue full, writing and switiching...\n");
       if ( current_logging_queue == logging_queue_1 )
