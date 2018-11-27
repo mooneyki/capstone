@@ -28,10 +28,10 @@ typedef struct
 
 void print_data_point(data_point *dp)
 {
-  printf("primary rpm:\t%" PRIu16       "\tsecondary rpm:\t%" PRIu16    "\ttorque:\t%" PRIu16 "\n"
-         "temp3:\t%" PRIu16             "\tbelt temp:\t%" PRIu16        "\ttemp2:\t%" PRIu16 "\n"
-         "brake current:\t%" PRIu16     "\ttemp1:\t%" PRIu16            "\tload cell:\t%" PRIu16 "\n"
-         "throttle position:\t%" PRIu16 "\ti_sp:\t %5.1f"               "\ttps_sp:\t %5.1f"  "\n",
+  printf("prrpm:\t%" PRIu16             "\tserpm:\t%" PRIu16            "\ttrque:\t%" PRIu16 "\n"
+         "temp3:\t%" PRIu16             "\tbtemp:\t%" PRIu16            "\ttemp2:\t%" PRIu16 "\n"
+         "braki:\t%" PRIu16             "\ttemp1:\t%" PRIu16            "\tloadc:\t%" PRIu16 "\n"
+         "t_p_s:\t%" PRIu16             "\tbi_sp:\t %4.1f"              "\ttpssp:\t %4.1f"  "\n",
          dp->prim_rpm,                  dp->sec_rpm,                    dp->torque,
          dp->temp3,                     dp->belt_temp,                  dp->temp2,
          dp->i_brake,                   dp->temp1,                      dp->load_cell, 

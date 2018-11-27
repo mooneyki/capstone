@@ -106,24 +106,31 @@ static void daq_task(void *arg)
     dp.i_brake = 0,     dp.temp1 = 0,          dp.load_cell = 0, 
     dp.tps = 0,         dp.i_sp = 0,           dp.tps_sp = 0
   }; //empty data point  
+  print_data_point( &dp );
 
   //module configurations
-  // init ADC
-  i2c_master_config( PORT_0, FAST_MODE_PLUS, I2C_MASTER_0_SDA_IO, I2C_MASTER_0_SCL_IO );
-  ad7998_init( PORT_0, ADC_SLAVE_ADDR, CHANNEL_SELECTION_0 ); //init adc
 
-  // init sd
-  init_sd();
-  xQueueHandle current_logging_queue = logging_queue_1;
+  // init ADC w/ channel selection
+  i2c_master_config( PORT_0, FAST_MODE_PLUS, I2C_MASTER_0_SDA_IO, I2C_MASTER_0_SCL_IO );
+  uint8_t ch_sel_h = ( CH6 );
+  uint8_t ch_sel_l = ( CH4 | CH3 | CH2 );
+  ad7998_config( PORT_0, ADC_SLAVE_ADDR, ch_sel_h, ch_sel_l ); 
+
+  // // init sd
+  // init_sd();
+  // xQueueHandle current_logging_queue = logging_queue_1;
 
   //init GPIOs
   configure_gpio();
 
+  //init PWMs
+  pwm_init();
+
   //init PIDs
-  init_pid ( brake_current_pid, 0, 0.1, 0, 10, 100 );
+  // init_pid ( brake_current_pid, 0, 0.1, 0, 10, 100 );
 
   //init faults
-  clear_faults ( ctrl_faults );
+  // clear_faults ( ctrl_faults );
 
   //default states
   ebrake_set();
@@ -132,104 +139,106 @@ static void daq_task(void *arg)
   set_throttle(0); //no throttle
   set_brake_duty(0); //no braking 
 
-  //choose test
-  printf("Test selection. Enter profile number.\n");
-  printf("Profile 1 - acceleration w/ launch.\n");
-  printf("Profile 2 - acceleration w/o launch.\n");
-  printf("Profile 3 - hill climb.\n");
-  printf("Profile 4 - test.\n");
-  scanf("%d", &main_ctrl.num_profile);
+  // //choose test
+  // printf("Test selection. Enter profile number.\n");
+  // printf("Profile 1 - acceleration w/ launch.\n");
+  // printf("Profile 2 - acceleration w/o launch.\n");
+  // printf("Profile 3 - hill climb.\n");
+  // printf("Profile 4 - test.\n");
+  // scanf("%d", &main_ctrl.num_profile);
 
-  switch( main_ctrl.num_profile ) 
-  {
-    case 1:
-      strcpy(filename_i, "/sdcard/profiles/brake_current_profile_accel_launch.csv");
-      strcpy(filename_t, "/sdcard/profiles/throttle_profile_accel_launch.csv");
-      break; 
+  // switch( main_ctrl.num_profile ) 
+  // {
+  //   case 1:
+  //     strcpy(filename_i, "/sdcard/profiles/brake_current_profile_accel_launch.csv");
+  //     strcpy(filename_t, "/sdcard/profiles/throttle_profile_accel_launch.csv");
+  //     break; 
 
-    case 2:
-      strcpy(filename_i, "/sdcard/profiles/brake_current_profile_accel.csv");
-      strcpy(filename_t, "/sdcard/profiles/throttle_profile_accel.csv");
-      break; 
+  //   case 2:
+  //     strcpy(filename_i, "/sdcard/profiles/brake_current_profile_accel.csv");
+  //     strcpy(filename_t, "/sdcard/profiles/throttle_profile_accel.csv");
+  //     break; 
 
-    case 3:
-      strcpy(filename_i, "/sdcard/profiles/brake_current_profile_hill.csv");
-      strcpy(filename_t, "/sdcard/profiles/throttle_profile_hill.csv");
-      break;
+  //   case 3:
+  //     strcpy(filename_i, "/sdcard/profiles/brake_current_profile_hill.csv");
+  //     strcpy(filename_t, "/sdcard/profiles/throttle_profile_hill.csv");
+  //     break;
 
-    case 4:
-      strcpy(filename_i, "/sdcard/profiles/brake_current_test_profile.csv");
-      strcpy(filename_t, "/sdcard/profiles/throttle_test_profile.csv");
-      break;      
-  }
+  //   case 4:
+  //     strcpy(filename_i, "/sdcard/profiles/brake_current_test_profile.csv");
+  //     strcpy(filename_t, "/sdcard/profiles/throttle_test_profile.csv");
+  //     break;      
+  // }
 
-  //LOAD BRAKE PROFILE FROM CSV FILE
-  /* open the CSV file */
-  fp = fopen(filename_i,"r");
-  if( fp == NULL)
-  {
-    printf("Unable to open file '%s'\n",filename_i);
-    exit(1);
-  }
+  // //LOAD BRAKE PROFILE FROM CSV FILE
+  // /* open the CSV file */
+  // fp = fopen(filename_i,"r");
+  // if( fp == NULL)
+  // {
+  //   printf("Unable to open file '%s'\n",filename_i);
+  //   exit(1);
+  // }
 
-  /* parse data */
-  while(fgets(buffer,BSIZE,fp))
-  {
-    field=strtok(buffer,","); /* get value */
-    i_sp[i]=atof(field);
+  // /* parse data */
+  // while(fgets(buffer,BSIZE,fp))
+  // {
+  //   field=strtok(buffer,","); /* get value */
+  //   i_sp[i]=atof(field);
     
-    /* display the result in the proper format */
-    printf("brake current sp: %5.1f\n",i_sp[i]);
+  //   /* display the result in the proper format */
+  //   printf("brake current sp: %5.1f\n",i_sp[i]);
         
-    ++i;
-  }
+  //   ++i;
+  // }
 
-  fclose(fp); /* close file */
+  // fclose(fp); /* close file */
 
-  //LOAD THROTTLE PROFILE FROM CSV FILE
-  /* open the CSV file */
-  fp = fopen(filename_t,"r");
-  if( fp == NULL)
-  {
-    printf("Unable to open file '%s'\n",filename_t);
-    exit(1);
-  }
+  // //LOAD THROTTLE PROFILE FROM CSV FILE
+  // /* open the CSV file */
+  // fp = fopen(filename_t,"r");
+  // if( fp == NULL)
+  // {
+  //   printf("Unable to open file '%s'\n",filename_t);
+  //   exit(1);
+  // }
 
-  /* parse data */
-  while(fgets(buffer,BSIZE,fp))
-  {
-    field=strtok(buffer,","); /* get value */
-    tps_sp[j]=atof(field);
+  // /* parse data */
+  // while(fgets(buffer,BSIZE,fp))
+  // {
+  //   field=strtok(buffer,","); /* get value */
+  //   tps_sp[j]=atof(field);
     
-    /* display the result in the proper format */
-    printf("throttle position sp: %5.1f\n",tps_sp[j]);
+  //   /* display the result in the proper format */
+  //   printf("throttle position sp: %5.1f\n",tps_sp[j]);
 
-    ++j;
-  }
+  //   ++j;
+  // }
 
-  fclose(fp); /* close file */  
+  // fclose(fp); /* close file */  
 
-  if (j != i) {
-    printf("Unmatched throttle and brake profiles.\n"); 
-    exit(1);
-  }
+  // if (j != i) {
+  //   printf("Unmatched throttle and brake profiles.\n"); 
+  //   exit(1);
+  // }
 
   //prompt user to start engine
+  printf("Start engine?\n");
+  printf("1 = YES ; 0 = NO\n");
   while ( !main_ctrl.en_eng ) 
   {
-    printf("Start engine?\n");
-    scanf("%d", &main_ctrl.en_eng);
+    scanf("%d\n", &main_ctrl.en_eng);
   }
   engine_on();
 
   //prompt user to confirm engine running and warm
+  printf("Engine running?\n");
+  printf("1 = YES ; 0 = NO\n");  
   while ( !main_ctrl.eng ) {
-    printf("Engine running?\n");
-    scanf("%d", &main_ctrl.eng);    
+    scanf("%d\n", &main_ctrl.eng);    
   }
 
   flasher_on();
-
+  printf("-------------- LO0000000OP --------------\n");
   /** END INIT STAGE **/  
 
 
@@ -242,70 +251,85 @@ static void daq_task(void *arg)
     // wait for timer alarm
     xQueueReceive( daq_timer_queue, &intr_status, portMAX_DELAY );
    
-    //check if test is done (profiles ended) or if test faulted
-    if ( ( main_ctrl.idx == i ) | ( ctrl_faults->trip ) ) {
-        main_ctrl.run = 0;
-    }
-
-    //get new set points (in the form of 0-100% i.e. duty cycle)
-    dp.i_sp = fetch_sp ( main_ctrl.idx, i_sp );
-    dp.tps_sp = fetch_sp ( main_ctrl.idx, tps_sp );
-
-    //e-brake release
-    if ( dp.tps_sp > LAUNCH_THRESHOLD )
-    {
-      ebrake_release();
-    }
-
-    //RECORD DATA
-    // adc
-    ad7998_read_0( PORT_0, ADC_SLAVE_ADDR, &(dp.torque), &(dp.belt_temp), &(dp.i_brake), &(dp.load_cell) );
-    main_ctrl.i_brake_amps = ( counts_to_volts ( dp.i_brake ) * I_BRAKE_SCALE )  + I_BRAKE_OFFSET; //ADC counts to amps
-    main_ctrl.i_brake_duty = 100 * ( main_ctrl.i_brake_amps / I_BRAKE_MAX ); //convert brake current in amps to duty cycle from 0-100%
-
-    // rpm measurements
+    //TEST START
+    set_throttle(i); //no throttle
+    set_brake_duty(50); //no braking  
+    ++i; 
+    if (i > 100) {
+      i = 0;
+    }   
+    printf("i: %d\n",i);
     xQueuePeek( primary_rpm_queue, &(dp.prim_rpm), 0 );
-    xQueuePeek( secondary_rpm_queue, &(dp.sec_rpm), 0 );
+    xQueuePeek( secondary_rpm_queue, &(dp.sec_rpm), 0 );    
+    ad7998_read_1( PORT_0, ADC_SLAVE_ADDR, &(dp.temp3), &(dp.belt_temp), &(dp.temp2), &(dp.temp1) );
+    print_data_point( &dp );
 
-    //update PIDs
-    pid_update ( brake_current_pid, dp.i_sp, main_ctrl.i_brake_duty );
+    //TEST END
 
-    //set brake current / throttle
-    set_throttle( dp.tps_sp ); 
-    set_brake_duty( brake_current_pid->output ); 
+    // //check if test is done (profiles ended) or if test faulted
+    // if ( ( main_ctrl.idx == i ) | ( ctrl_faults->trip ) ) {
+    //     main_ctrl.run = 0;
+    // }
 
-    //check for faults
-    if ( main_ctrl.i_brake_amps > MAX_I_BRAKE ) {
-      ctrl_faults->trip = 1;
-      ctrl_faults->overcurrent_fault = 1;      
-    }
+    // //get new set points (in the form of 0-100% i.e. duty cycle)
+    // dp.i_sp = fetch_sp ( main_ctrl.idx, i_sp );
+    // dp.tps_sp = fetch_sp ( main_ctrl.idx, tps_sp );
 
-    // push struct to logging queue
-    // if the queue is full, switch queues and send the full for writing to SD
-    if (xQueueSend( current_logging_queue, &dp, 0 ) == errQUEUE_FULL )
-    {
-      printf("daq_task -- queue full, writing and switiching...\n");
-      if ( current_logging_queue == logging_queue_1 )
-      {
-        current_logging_queue = logging_queue_2;
-        xTaskCreatePinnedToCore( write_logging_queue_to_sd,
-                "write_lq_1_sd", 2048, (void *) logging_queue_1,
-                (configMAX_PRIORITIES-1), NULL, 1 );
-      }
-      else
-      {
-        current_logging_queue = logging_queue_1;
-        xTaskCreatePinnedToCore( write_logging_queue_to_sd,
-                "write_lq_2_sd", 2048, (void *) logging_queue_2,
-                (configMAX_PRIORITIES-1), NULL, 1 );
-      }
+    // //e-brake release
+    // if ( dp.tps_sp > LAUNCH_THRESHOLD )
+    // {
+    //   ebrake_release();
+    // }
 
-      // reset, though queue should be empty after writing
-      // queue won't be empty if a writing task overlap occurred
-      xQueueReset( current_logging_queue );
-    }
+    // //RECORD DATA
+    // // adc
+    // ad7998_read_0( PORT_0, ADC_SLAVE_ADDR, &(dp.torque), &(dp.belt_temp), &(dp.i_brake), &(dp.load_cell) );
+    // main_ctrl.i_brake_amps = ( counts_to_volts ( dp.i_brake ) * I_BRAKE_SCALE )  + I_BRAKE_OFFSET; //ADC counts to amps
+    // main_ctrl.i_brake_duty = 100 * ( main_ctrl.i_brake_amps / I_BRAKE_MAX ); //convert brake current in amps to duty cycle from 0-100%
 
-    ++main_ctrl.idx;
+    // // rpm measurements
+    // xQueuePeek( primary_rpm_queue, &(dp.prim_rpm), 0 );
+    // xQueuePeek( secondary_rpm_queue, &(dp.sec_rpm), 0 );
+
+    // //update PIDs
+    // pid_update ( brake_current_pid, dp.i_sp, main_ctrl.i_brake_duty );
+
+    // //set brake current / throttle
+    // set_throttle( dp.tps_sp ); 
+    // set_brake_duty( brake_current_pid->output ); 
+
+    // //check for faults
+    // if ( main_ctrl.i_brake_amps > MAX_I_BRAKE ) {
+    //   ctrl_faults->trip = 1;
+    //   ctrl_faults->overcurrent_fault = 1;      
+    // }
+
+    // // push struct to logging queue
+    // // if the queue is full, switch queues and send the full for writing to SD
+    // if (xQueueSend( current_logging_queue, &dp, 0 ) == errQUEUE_FULL )
+    // {
+    //   printf("daq_task -- queue full, writing and switiching...\n");
+    //   if ( current_logging_queue == logging_queue_1 )
+    //   {
+    //     current_logging_queue = logging_queue_2;
+    //     xTaskCreatePinnedToCore( write_logging_queue_to_sd,
+    //             "write_lq_1_sd", 2048, (void *) logging_queue_1,
+    //             (configMAX_PRIORITIES-1), NULL, 1 );
+    //   }
+    //   else
+    //   {
+    //     current_logging_queue = logging_queue_1;
+    //     xTaskCreatePinnedToCore( write_logging_queue_to_sd,
+    //             "write_lq_2_sd", 2048, (void *) logging_queue_2,
+    //             (configMAX_PRIORITIES-1), NULL, 1 );
+    //   }
+
+    //   // reset, though queue should be empty after writing
+    //   // queue won't be empty if a writing task overlap occurred
+    //   xQueueReset( current_logging_queue );
+    // }
+
+    // ++main_ctrl.idx;
   }
 
   /** END LOOP STAGE **/

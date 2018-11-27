@@ -7,10 +7,11 @@
 
 #define PRIMARY_GPIO          26             // engine rpm measurement
 #define SECONDARY_GPIO        27             // CVT secondary rpm measurement
-#define SOLENOID_GPIO         35             //e-brake release solenoid
+#define SOLENOID_GPIO         16             //e-brake release solenoid ***DIFFERENT FROM PCB RIGHT NOW - NEEDS REWORK**
 #define KILL_GPIO             33             //kill switch relay control
 #define FLASHER_GPIO          32             // flashing indicator relay control
 #define GPIO_INPUT_PIN_SEL    ((1ULL<<PRIMARY_GPIO) | (1ULL<<SECONDARY_GPIO))
+#define GPIO_OUTPUT_PIN_SEL   ((1ULL<<SOLENOID_GPIO) | (1ULL<<FLASHER_GPIO) | (1ULL<<KILL_GPIO))
 
 #define RPM_TIMER_GROUP       TIMER_GROUP_1  // group of speed timer
 #define RPM_TIMER_IDX         0              // index of speed timer
@@ -116,6 +117,12 @@ void configure_gpio()
   io_conf.mode = GPIO_MODE_INPUT;  // set as input mode
   io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
   io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+  gpio_config(&io_conf);
+
+  //congifure GPIO outputs
+  io_conf.pin_bit_mask = GPIO_OUTPUT_PIN_SEL;  // bit mask of the pins
+  io_conf.intr_type = GPIO_PIN_INTR_DISABLE;  // interrupt of rising edge
+  io_conf.mode = GPIO_MODE_OUTPUT;  // set as input mode
   gpio_config(&io_conf);
 
   // ISRs
