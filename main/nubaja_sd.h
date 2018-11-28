@@ -34,7 +34,7 @@ void print_data_point(data_point *dp)
   printf("prrpm:\t%" PRIu16             "\tserpm:\t%" PRIu16            "\ttrque:\t%" PRIu16 "\n"
          "temp3:\t%" PRIu16             "\tbtemp:\t%" PRIu16            "\ttemp2:\t%" PRIu16 "\n"
          "braki:\t%" PRIu16             "\ttemp1:\t%" PRIu16            "\tloadc:\t%" PRIu16 "\n"
-         "t_p_s:\t%" PRIu16             "\tbi_sp:\t %4.1f"              "\ttpssp:\t %4.1f"  "\n",
+         "t_p_s:\t%" PRIu16             "\tbi_sp:\t %3f"                "\ttpssp:\t %3f"  "\n",
          dp->prim_rpm,                  dp->sec_rpm,                    dp->torque,
          dp->temp3,                     dp->belt_temp,                  dp->temp2,
          dp->i_brake,                   dp->temp1,                      dp->load_cell, 
@@ -66,7 +66,7 @@ static void write_logging_queue_to_sd(void *arg)
              "%6" PRIu16 ", %6" PRIu16 ",   %6" PRIu16 ","
              "%6" PRIu16 ", %6" PRIu16 ",   %6" PRIu16 ","
              "%6" PRIu16 ", %6" PRIu16 ",   %6" PRIu16 ","
-             "%6" PRIu16 ", %5.1f"     ",   %5.1f" "\n", 
+             "%6" PRIu16 ", %3f"     ",     %3f" "\n", 
               dp.prim_rpm,  dp.sec_rpm,     dp.torque,
               dp.temp3,     dp.belt_temp,   dp.temp2,
               dp.i_brake,   dp.temp1,       dp.load_cell, 

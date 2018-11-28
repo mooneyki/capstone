@@ -262,8 +262,10 @@ static void daq_task(void *arg)
     } 
   
     printf("i: %d\n",i);
-    xQueuePeek( primary_rpm_queue, &(dp.prim_rpm), 0 );
-    xQueuePeek( secondary_rpm_queue, &(dp.sec_rpm), 0 );    
+
+    rpm_log ( primary_rpm_queue, &(dp.prim_rpm) );
+    rpm_log ( secondary_rpm_queue, &(dp.sec_rpm) );
+
     // ad7998_read_1( PORT_0, ADC_SLAVE_ADDR, &(dp.temp3), &(dp.belt_temp), &(dp.temp2), &(dp.temp1) );
     ad7998_read_3( PORT_0, ADC_SLAVE_ADDR, 
                   &(dp.torque),
@@ -301,8 +303,8 @@ static void daq_task(void *arg)
     // main_ctrl.i_brake_duty = 100 * ( main_ctrl.i_brake_amps / I_BRAKE_MAX ); //convert brake current in amps to duty cycle from 0-100%
 
     // // rpm measurements
-    // xQueuePeek( primary_rpm_queue, &(dp.prim_rpm), 0 );
-    // xQueuePeek( secondary_rpm_queue, &(dp.sec_rpm), 0 );
+    // rpm_log ( primary_rpm_queue, &(dp.prim_rpm) );
+    // rpm_log ( secondary_rpm_queue, &(dp.sec_rpm) );
 
     // //update PIDs
     // pid_update ( brake_current_pid, dp.i_sp, main_ctrl.i_brake_duty );

@@ -110,7 +110,7 @@ void configure_gpio()
   primary_rpm_queue = xQueueCreate(1, sizeof(uint16_t));
   secondary_rpm_queue = xQueueCreate(1, sizeof(uint16_t));
 
-  // config rising-edge interrupt GPIO pins (rpm, mph, and logging)
+  // config rising-edge interrupt GPIO pins (primray, secondary RPM)
   gpio_config_t io_conf;
   io_conf.intr_type = GPIO_PIN_INTR_POSEDGE;  // interrupt of rising edge
   io_conf.pin_bit_mask = GPIO_INPUT_PIN_SEL;  // bit mask of the pins
@@ -138,6 +138,13 @@ void configure_gpio()
   flasher_off();
   engine_off();
   ebrake_set();
+}
+
+void rpm_log ( QueueHandle_t queue, uint16_t* val ) 
+{
+  uint16_t rst = 0;
+  xQueuePeek( queue, val, 0 );
+  xQueueOverwrite( queue, &rst ); //overwrite queue to 0 to avoid repetitive values
 }
 
 #endif // NUBAJA_GPIO_H_
