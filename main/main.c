@@ -112,8 +112,10 @@ static void daq_task(void *arg)
 
   // init ADC w/ channel selection
   i2c_master_config( PORT_0, FAST_MODE_PLUS, I2C_MASTER_0_SDA_IO, I2C_MASTER_0_SCL_IO );
-  uint8_t ch_sel_h = ( CH6 );
-  uint8_t ch_sel_l = ( CH4 | CH3 | CH2 );
+  // uint8_t ch_sel_h = ( CH6 );
+  // uint8_t ch_sel_l = ( CH4 | CH3 | CH2 );
+  uint8_t ch_sel_h = ( CH8 | CH7 | CH6 | CH5 );
+  uint8_t ch_sel_l = ( CH4 | CH3 | CH2 | CH1 );  
   ad7998_config( PORT_0, ADC_SLAVE_ADDR, ch_sel_h, ch_sel_l ); 
 
   // // init sd
@@ -222,7 +224,7 @@ static void daq_task(void *arg)
   // }
 
   //prompt user to start engine
-  printf("Start engine?\n");
+  printf("Start engine.\n");
   printf("1 = YES ; 0 = NO\n");
   while ( !main_ctrl.en_eng ) 
   {
@@ -238,7 +240,7 @@ static void daq_task(void *arg)
   }
 
   flasher_on();
-  printf("-------------- LO0000000OP --------------\n");
+  printf("\n\n\n\n\n-------------- LO0000000OP --------------\n\n\n\n\n");
   /** END INIT STAGE **/  
 
 
@@ -255,19 +257,26 @@ static void daq_task(void *arg)
     set_throttle(i); 
     set_brake_duty(i);   
     ++i; 
-    // ++j;
     if (i > 100) {
       i = 0;
     } 
-    // if (j > 35) {
-    //   j = 0;
-    // }   
+  
     printf("i: %d\n",i);
     xQueuePeek( primary_rpm_queue, &(dp.prim_rpm), 0 );
     xQueuePeek( secondary_rpm_queue, &(dp.sec_rpm), 0 );    
-    ad7998_read_1( PORT_0, ADC_SLAVE_ADDR, &(dp.temp3), &(dp.belt_temp), &(dp.temp2), &(dp.temp1) );
+    // ad7998_read_1( PORT_0, ADC_SLAVE_ADDR, &(dp.temp3), &(dp.belt_temp), &(dp.temp2), &(dp.temp1) );
+    ad7998_read_3( PORT_0, ADC_SLAVE_ADDR, 
+                  &(dp.torque),
+                  &(dp.temp3),
+                  &(dp.belt_temp),
+                  &(dp.temp2),
+                  &(dp.i_brake), 
+                  &(dp.temp1), 
+                  &(dp.load_cell), 
+                  &(dp.tps) );
     print_data_point( &dp );
-
+    main_ctrl.i_brake_amps = ( counts_to_volts ( dp.i_brake ) * I_BRAKE_SCALE )  + I_BRAKE_OFFSET; //ADC counts to amps
+    printf( "brake current: %4.2f\n", main_ctrl.i_brake_amps );
     //TEST END
 
     // //check if test is done (profiles ended) or if test faulted

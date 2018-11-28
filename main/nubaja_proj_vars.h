@@ -13,7 +13,7 @@
 
 //adc scales, offsets (y = scale*x + offset)
 #define I_BRAKE_SCALE         	1
-#define I_BRAKE_OFFSET        	0
+#define I_BRAKE_OFFSET        	0.05
 #define I_BRAKE_MAX           	3.6
 
 //fault thresholds
