@@ -2,12 +2,13 @@
 #define NUBAJA_SD_H_
 
 #define __STDC_FORMAT_MACROS
-#include <inttypes.h>
 
+#include <inttypes.h>
 #include "esp_vfs_fat.h"
 #include "driver/sdmmc_host.h"
 #include "driver/sdspi_host.h"
 #include "sdmmc_cmd.h"
+#include "freertos/semphr.h"
 
 #define SD_MISO 19
 #define SD_MOSI 18
@@ -18,6 +19,8 @@
 
 #define WRITING_DATA_BIT (1 << 0)
 EventGroupHandle_t writing_eg;  // event group to signify writing data
+SemaphoreHandle_t write_lock = NULL;
+ 
 
 typedef struct
 {
@@ -40,14 +43,10 @@ void print_data_point(data_point *dp)
 
 static void write_logging_queue_to_sd(void *arg)
 {
-  if (xEventGroupGetBits(writing_eg) & WRITING_DATA_BIT)
+  if( xSemaphoreTake( write_lock, ( TickType_t ) 1 ) == pdFALSE )
   {
     printf("write_logging_queue_to_sd -- task overlap, skipping queue\n");
     vTaskDelete(NULL);
-  }
-  else
-  {
-    xEventGroupSetBits(writing_eg, WRITING_DATA_BIT);
   }
 
   xQueueHandle lq = (xQueueHandle) arg;
@@ -90,6 +89,8 @@ static void write_logging_queue_to_sd(void *arg)
   xEventGroupClearBits(writing_eg, WRITING_DATA_BIT);
 
   // per FreeRTOS, tasks MUST be deleted before breaking out of its implementing funciton
+  //also release mutex
+  xSemaphoreGive ( write_lock );
   vTaskDelete(NULL);
 }
 
@@ -118,9 +119,9 @@ void init_sd()
     printf("init_sd -- failed to mount SD card\n");
   }
 
-  // setup button event group
-  writing_eg = xEventGroupCreate();
-  xEventGroupClearBits(writing_eg, WRITING_DATA_BIT);
+  //create mutex
+  write_lock = xSemaphoreCreateMutex();
+
 }
 
 #endif // NUBAJA_SD_H_

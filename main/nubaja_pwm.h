@@ -31,6 +31,7 @@ void pwm_init ()
 
     //brake drive config
     pwm_config.frequency = BRAKE_PWM_FREQUENCY;
+    pwm_config.duty_mode = MCPWM_DUTY_MODE_1; //inverted
     mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_1, &pwm_config); 
     printf("pwm_init -- success\n");   	
 }
