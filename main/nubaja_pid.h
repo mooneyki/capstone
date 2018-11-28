@@ -20,11 +20,10 @@ struct pid_controller
 	//bounds
 	float windupGuard; 
 	float outputMax;
-};
-typedef struct pid_controller *pid_ctrl_t;
+}; typedef struct pid_controller pid_ctrl_t;
 
 
-void pid_update ( pid_ctrl_t pid, float sp, float pv )
+void pid_update ( pid_ctrl_t *pid, float sp, float pv )
 {
 	pid->old_error = pid->error; 
 	pid->error = sp - pv;
@@ -47,7 +46,7 @@ void pid_update ( pid_ctrl_t pid, float sp, float pv )
 
 }
 
-void init_pid ( pid_ctrl_t pid, float kp, float ki, float kd, float windupGuard, float outputMax ) 
+void init_pid ( pid_ctrl_t *pid, float kp, float ki, float kd, float windupGuard, float outputMax ) 
 {
 	// measurements and input / output variables
 	pid->error = 0; 
@@ -55,7 +54,7 @@ void init_pid ( pid_ctrl_t pid, float kp, float ki, float kd, float windupGuard,
 	pid->output = 0; 
 	
 	// tuning parameters
-	pid->kp = kp;
+	pid->kp = 0;
 	pid->ki = ki;
 	pid->kd = kd; 
 
@@ -68,7 +67,7 @@ void init_pid ( pid_ctrl_t pid, float kp, float ki, float kd, float windupGuard,
 	pid->outputMax = outputMax;	
 }
 
-void reset_pid (pid_ctrl_t pid ) 
+void reset_pid (pid_ctrl_t *pid ) 
 {
 	pid->error = 0; 
 	pid->old_error = 0;
@@ -84,10 +83,5 @@ float fetch_sp ( int t, float profile[] )
 	sp = profile[t];
 	return sp; 
 }
-
-// // EACH LOOP ITERATION: 
-// sp = fetch_sp(RPM);
-// pid_update(throttle, sp, RPM);
-// set_throttle(throttle->output);
 
 #endif

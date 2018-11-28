@@ -108,7 +108,7 @@ static void daq_task(void *arg)
   }; //empty data point  
   print_data_point( &dp );
 
-  //module configurations
+  //module, peripheral configurations
 
   // init ADC w/ channel selection
   i2c_master_config( PORT_0, FAST_MODE_PLUS, I2C_MASTER_0_SDA_IO, I2C_MASTER_0_SCL_IO );
@@ -129,10 +129,10 @@ static void daq_task(void *arg)
   pwm_init();
 
   //init PIDs
-  // init_pid ( brake_current_pid, 0, 0.1, 0, 10, 100 );
+  init_pid( &brake_current_pid, 0, 0.1, 0, 10, 100 );
 
   //init faults
-  // clear_faults ( ctrl_faults );
+  clear_faults ( &ctrl_faults );
 
   //default states
   ebrake_set();
@@ -307,7 +307,7 @@ static void daq_task(void *arg)
     // rpm_log ( secondary_rpm_queue, &(dp.sec_rpm) );
 
     // //update PIDs
-    // pid_update ( brake_current_pid, dp.i_sp, main_ctrl.i_brake_duty );
+    // pid_update ( &brake_current_pid, dp.i_sp, main_ctrl.i_brake_duty );
 
     // //set brake current / throttle
     // set_throttle( dp.tps_sp ); 
@@ -352,7 +352,7 @@ static void daq_task(void *arg)
   //restore defaults, safe system shutdown
   set_throttle( 0 ); //no throttle
   set_brake_duty( 0 ); //no braking 
-  reset_pid( brake_current_pid );
+  reset_pid( &brake_current_pid );
   engine_off();
   flasher_off();
   ebrake_set();

@@ -8,9 +8,9 @@ struct fault
 	int overvolt_fault;
 	int trip;  
 };
-typedef struct fault *fault_t;
+typedef struct fault fault_t;
 
-void clear_faults ( fault_t fault )
+void clear_faults ( fault_t *fault )
 {
 	fault->overcurrent_fault = 0;
 	fault->overtemp_fault = 0;
@@ -18,17 +18,17 @@ void clear_faults ( fault_t fault )
 	fault->trip = 0;
 }
 
-void print_faults ( fault_t fault ) 
+void print_faults ( fault_t *fault ) 
 {
 	if ( fault->trip ) {
 		if ( fault->overcurrent_fault ) {
-			printf("Over current fault %d \n", fault->overcurrent_fault );
+			printf("Overcurrent fault %d \n", fault->overcurrent_fault );
 		}
 		if ( fault->overtemp_fault ) {
-			printf("Over current fault %d \n", fault->overtemp_fault );
+			printf("Overtemp fault %d \n", fault->overtemp_fault );
 		}
 		if ( fault->overvolt_fault ) {
-			printf("Over current fault %d \n", fault->overvolt_fault );
+			printf("Overvolt fault %d \n", fault->overvolt_fault );
 		}
 	}
 	else {
