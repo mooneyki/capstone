@@ -254,14 +254,14 @@ static void daq_task(void *arg)
     xQueueReceive( daq_timer_queue, &intr_status, portMAX_DELAY );
    
     //TEST START
-    set_throttle(i); 
-    set_brake_duty(i);   
-    ++i; 
-    if (i > 100) {
-      i = 0;
-    } 
+    // set_throttle(i); 
+    // set_brake_duty(75);   
+    // ++i; 
+    // if (i > 100) {
+    //   i = 0;
+    // } 
   
-    printf("i: %d\n",i);
+    // printf("i: %d\n",i);
 
     rpm_log ( primary_rpm_queue, &(dp.prim_rpm) );
     rpm_log ( secondary_rpm_queue, &(dp.sec_rpm) );
