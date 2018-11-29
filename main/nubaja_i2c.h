@@ -25,7 +25,7 @@
 #define I2C_WRITE_FAILED            1
 #define I2C_READ_FAILED             2
 
-#define AD7998_BITMASK              0b0000111111111111 //modified since AD7998 registers are 12 bits (4 MSBs unused here)
+
 
 // configure one I2C module for operation as an I2C master with internal pullups disabled
 void i2c_master_config(int port_num, int clk, int sda, int scl)
@@ -204,10 +204,10 @@ int i2c_read_2_bytes_4(int port_num, uint8_t slave_address, int reg,
   ret = i2c_master_cmd_begin(port_num, cmd, I2C_TASK_LENGTH / portTICK_RATE_MS);
   i2c_cmd_link_delete(cmd);
 
-  *data_0 = (data_0_h << 8 | data_0_l) & AD7998_BITMASK;
-  *data_1 = (data_1_h << 8 | data_1_l) & AD7998_BITMASK;
-  *data_2 = (data_2_h << 8 | data_2_l) & AD7998_BITMASK;
-  *data_3 = (data_3_h << 8 | data_3_l) & AD7998_BITMASK;
+  *data_0 = (data_0_h << 8 | data_0_l);
+  *data_1 = (data_1_h << 8 | data_1_l);
+  *data_2 = (data_2_h << 8 | data_2_l);
+  *data_3 = (data_3_h << 8 | data_3_l);
 
   if (ret != ESP_OK) {
     printf("i2c_read_2_bytes_4 -- failure on port: %d, slave: %d, reg: %d\n",
@@ -262,14 +262,14 @@ int i2c_read_2_bytes_8(int port_num, uint8_t slave_address, int reg,
   ret = i2c_master_cmd_begin(port_num, cmd, I2C_TASK_LENGTH / portTICK_RATE_MS);
   i2c_cmd_link_delete(cmd);
 
-  *data_0 = (data_0_h << 8 | data_0_l) & AD7998_BITMASK;
-  *data_1 = (data_1_h << 8 | data_1_l) & AD7998_BITMASK;
-  *data_2 = (data_2_h << 8 | data_2_l) & AD7998_BITMASK;
-  *data_3 = (data_3_h << 8 | data_3_l) & AD7998_BITMASK;
-  *data_4 = (data_4_h << 8 | data_4_l) & AD7998_BITMASK;
-  *data_5 = (data_5_h << 8 | data_5_l) & AD7998_BITMASK;
-  *data_6 = (data_6_h << 8 | data_6_l) & AD7998_BITMASK;
-  *data_7 = (data_7_h << 8 | data_7_l) & AD7998_BITMASK;  
+  *data_0 = (data_0_h << 8 | data_0_l);
+  *data_1 = (data_1_h << 8 | data_1_l);
+  *data_2 = (data_2_h << 8 | data_2_l);
+  *data_3 = (data_3_h << 8 | data_3_l);
+  *data_4 = (data_4_h << 8 | data_4_l);
+  *data_5 = (data_5_h << 8 | data_5_l);
+  *data_6 = (data_6_h << 8 | data_6_l);
+  *data_7 = (data_7_h << 8 | data_7_l);  
 
   if (ret != ESP_OK) {
     printf("i2c_read_2_bytes_8 -- failure on port: %d, slave: %d, reg: %d\n",

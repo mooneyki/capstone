@@ -30,7 +30,7 @@
 #define CH6 					0b0010
 #define CH7 					0b0100
 #define CH8 					0b1000
-
+#define AD7998_BITMASK          0b0000111111111111 //modified since AD7998 registers are 12 bits (4 MSBs unused here)
 
 //cycle timer register
 #define CYCLE_TIME 				0b00000100 //0.5ms conversion interval 
@@ -77,6 +77,10 @@ void ad7998_read_0 ( int port_num, int slave_address,
 	uint8_t addr_pointer = CMD_MODE; //cmd mode
 	i2c_read_2_bytes_4( port_num, slave_address, addr_pointer, 
 		ch1, ch3, ch5, ch7 );
+	*ch1 = ( *ch1 & AD7998_BITMASK );
+	*ch3 = ( *ch3 & AD7998_BITMASK );
+	*ch5 = ( *ch5 & AD7998_BITMASK );
+	*ch7 = ( *ch7 & AD7998_BITMASK );
 }
 
 //read function for channel selection 1
@@ -89,6 +93,10 @@ void ad7998_read_1 ( int port_num, int slave_address,
 	uint8_t addr_pointer = CMD_MODE; //cmd mode
 	i2c_read_2_bytes_4( port_num, slave_address, addr_pointer, 
 		ch2, ch3, ch4, ch6 );
+	*ch2 = ( *ch2 & AD7998_BITMASK );
+	*ch3 = ( *ch3 & AD7998_BITMASK );
+	*ch4 = ( *ch4 & AD7998_BITMASK );
+	*ch6 = ( *ch6 & AD7998_BITMASK );	
 }
 
 //read function for channel selection 3
@@ -107,6 +115,14 @@ void ad7998_read_3 ( int port_num, int slave_address,
 	i2c_read_2_bytes_8( port_num, slave_address, addr_pointer, 
 		 ch1,  ch2,  ch3,  ch4,
 		 ch5,  ch6,  ch7,  ch8 );
+	*ch1 = ( *ch1 & AD7998_BITMASK );
+	*ch2 = ( *ch2 & AD7998_BITMASK );
+	*ch3 = ( *ch3 & AD7998_BITMASK );
+	*ch4 = ( *ch4 & AD7998_BITMASK );	
+	*ch5 = ( *ch5 & AD7998_BITMASK );
+	*ch6 = ( *ch6 & AD7998_BITMASK );
+	*ch7 = ( *ch7 & AD7998_BITMASK );
+	*ch8 = ( *ch8 & AD7998_BITMASK );
 }
 
 #endif
