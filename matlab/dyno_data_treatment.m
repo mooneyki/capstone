@@ -14,7 +14,7 @@ belt_temp_scale = 445.8;
 belt_temp_offset = -307.4;
 
 i_brake_scale = 1;
-i_brake_offset = 0;
+i_brake_offset = 0.05;
 
 load_cell_scale = 30.3;
 load_cell_offset = -50;
@@ -119,7 +119,7 @@ saveas(f,fullFileName);
 
 %Brake current
 f = figure('Position',[scrsz(3)/2 scrsz(4)/3 scrsz(3)/2 scrsz(4)/3]);
-p = plot(x,torque);
+p = plot(x,i_brake);
 title('Brake Current')
 xlabel('time')
 ylabel('Current')
