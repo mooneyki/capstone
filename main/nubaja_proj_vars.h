@@ -4,7 +4,7 @@
 //timing
 #define DAQ_TIMER_GROUP       	TIMER_GROUP_0  // group of daq timer
 #define DAQ_TIMER_IDX         	0              // index of daq timer
-#define DAQ_TIMER_HZ          	1           // frequency of the daq timer in Hz
+#define DAQ_TIMER_HZ          	2           // frequency of the daq timer in Hz
 #define DAQ_TIMER_DIVIDER     	100
 
 
@@ -68,7 +68,7 @@ float tps_sp_test[BSIZE] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 						   10, 10, 10, 10, 10, 25, 25, 25, 25, 25,
 						   35, 35, 35, 35, 35, 35, 35, 35, 35, 35,
 						   50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-						   80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+						   100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
 						   40, 40, 40, 40, 40, 40, 40, 40, 40, 40,
 						   60, 60, 60, 60, 60, 60, 60, 60, 60, 60,
 						   30, 30, 30, 30, 30, 30, 30, 30, 30, 30,

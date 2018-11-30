@@ -16,11 +16,9 @@
 #define SD_CS   15
 
 #define LOGGING_QUEUE_SIZE  1000   // data logging queue size
-
-#define WRITING_DATA_BIT (1 << 0)
-EventGroupHandle_t writing_eg;  // event group to signify writing data
 SemaphoreHandle_t write_lock = NULL;
- 
+int file_num = 0;
+char filename[20] = "/sdcard/data_x.csv";
 
 typedef struct
 {
@@ -34,7 +32,7 @@ void print_data_point(data_point *dp)
   printf("prrpm:\t%" PRIu16             "\tserpm:\t%" PRIu16            "\ttrque:\t%" PRIu16 "\n"
          "temp3:\t%" PRIu16             "\tbtemp:\t%" PRIu16            "\ttemp2:\t%" PRIu16 "\n"
          "braki:\t%" PRIu16             "\ttemp1:\t%" PRIu16            "\tloadc:\t%" PRIu16 "\n"
-         "t_p_s:\t%" PRIu16             "\tbi_sp:\t %3f"                "\ttpssp:\t %3f"  "\n",
+         "t_p_s:\t%" PRIu16             "\tbi_sp: %6.2f"                "\ttpssp: %6.2f"  "\n",
          dp->prim_rpm,                  dp->sec_rpm,                    dp->torque,
          dp->temp3,                     dp->belt_temp,                  dp->temp2,
          dp->i_brake,                   dp->temp1,                      dp->load_cell, 
@@ -53,40 +51,51 @@ static void write_logging_queue_to_sd(void *arg)
   data_point dp;
   // num fields * num chars for each value + comma / return
   // int16_t can be -35,xxx, so max 6 chars per val
-  int line_size = 9 * 7;
+  int line_size = (13 * 7) + 9; //THIS IS CRITICAL - DO NOT CHANGE
   // num lines * line size + char for null term
   int buff_size = LOGGING_QUEUE_SIZE * line_size + 1;
   char* buff = (char*) malloc(buff_size * sizeof(char));
 
   int i = 0;
-  xQueueReceive(lq, &dp, 0);
   while (xQueueReceive(lq, &dp, 0) != pdFALSE)
   {
     snprintf(buff + (i * line_size), buff_size - (i * line_size),
              "%6" PRIu16 ", %6" PRIu16 ",   %6" PRIu16 ","
              "%6" PRIu16 ", %6" PRIu16 ",   %6" PRIu16 ","
              "%6" PRIu16 ", %6" PRIu16 ",   %6" PRIu16 ","
-             "%6" PRIu16 ", %3f"     ",     %3f" "\n", 
+             "%6" PRIu16 ", %6.2f"       ",   %6.2f" "\n", 
               dp.prim_rpm,  dp.sec_rpm,     dp.torque,
               dp.temp3,     dp.belt_temp,   dp.temp2,
               dp.i_brake,   dp.temp1,       dp.load_cell, 
               dp.tps,       dp.i_sp,        dp.tps_sp); 
     ++i;
   }
+  // for ( i = 0; i<5 ;i++ ) {
+  //   xQueueReceive(lq, &dp, 0);
+  //   snprintf(buff + (i * line_size), buff_size - (i * line_size),
+  //            "%6" PRIu16 ", %6" PRIu16 ",   %6" PRIu16 ","
+  //            "%6" PRIu16 ", %6" PRIu16 ",   %6" PRIu16 ","
+  //            "%6" PRIu16 ", %6" PRIu16 ",   %6" PRIu16 ","
+  //            "%6" PRIu16 ", %6.2f"     ",   %6.2f" "\n", 
+  //             dp.prim_rpm,  dp.sec_rpm,     dp.torque,
+  //             dp.temp3,     dp.belt_temp,   dp.temp2,
+  //             dp.i_brake,   dp.temp1,       dp.load_cell, 
+  //             dp.tps,       dp.i_sp,        dp.tps_sp); 
+  // }
 
   FILE *fp;
-  fp = fopen("/sdcard/dyno_data/esp_dyno_data.csv", "a");
+  fp = fopen( filename, "a" );
   if (fp == NULL)
   {
     printf("write_logging_queue_to_sd -- failed to create file\n");
     vTaskDelete(NULL);
   }
   fprintf(fp, "%s", buff);
+  printf("%s",buff);
   fclose(fp);
 
   printf("write_logging_queue_to_sd -- writing done\n");
   free(buff);
-  xEventGroupClearBits(writing_eg, WRITING_DATA_BIT);
 
   // per FreeRTOS, tasks MUST be deleted before breaking out of its implementing funciton
   //also release mutex
@@ -108,19 +117,44 @@ void init_sd()
 
   esp_vfs_fat_sdmmc_mount_config_t mount_config =
   {
-    .format_if_mount_failed = false,
+    .format_if_mount_failed = true,
     .max_files = 5
   };
 
   sdmmc_card_t* card;
-  if (esp_vfs_fat_sdmmc_mount("/sdcard", &host, &slot_config, &mount_config, &card)
-      != ESP_OK)
+  esp_err_t ret = esp_vfs_fat_sdmmc_mount("/sdcard", &host, &slot_config, &mount_config, &card);
+  if ( ret != ESP_OK )
   {
-    printf("init_sd -- failed to mount SD card\n");
+    if ( ret == ESP_FAIL ) {
+      printf("init_sd -- failed to mount filesystem\n");
+    }
+    else {
+      printf("init_sd -- failed to init card\n"); 
+    }
   }
+
+  sdmmc_card_print_info(stdout, card);
 
   //create mutex
   write_lock = xSemaphoreCreateMutex();
+
+  FILE *fp;
+  // fp = fopen("/sdcard/data.csv", "a");
+  // memset(filename,0,strlen(filename));
+  printf("Enter output file num.\n");
+  while ( !file_num ) {
+    scanf( "%d", &file_num);
+  }
+  filename[13] = file_num + '0';
+  printf("output filename: %s\n",filename);
+  fp = fopen( filename, "a");
+  if (fp == NULL)
+  {
+    printf("init_sd -- failed to create file\n");
+    fclose(fp);
+    return;
+  }
+  fclose(fp);
 
   printf("init_sd -- configuring SD success\n");
 

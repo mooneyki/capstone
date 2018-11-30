@@ -225,6 +225,7 @@ static void daq_task(void *arg)
 
     //update PIDs
     // pid_update ( &brake_current_pid, dp.i_sp, main_ctrl.i_brake_duty );
+    // printf( "brake cmd: %4.2f\n", brake_current_pid.output );
 
     //set brake current / throttle
     set_throttle( dp.tps_sp ); 
@@ -234,11 +235,11 @@ static void daq_task(void *arg)
 
     print_data_point( &dp );
 
-    //check for faults
-    // if ( main_ctrl.i_brake_amps > MAX_I_BRAKE ) {
-    //   ctrl_faults->trip = 1;
-    //   ctrl_faults->overcurrent_fault = 1;      
-    // }
+    // check for faults
+    if ( main_ctrl.i_brake_amps > MAX_I_BRAKE ) {
+      ctrl_faults.trip = 1;
+      ctrl_faults.overcurrent_fault = 1;      
+    }
 
     // push struct to logging queue
     // if the queue is full, switch queues and send the full for writing to SD
@@ -252,8 +253,8 @@ static void daq_task(void *arg)
                 "write_lq_1_sd", 2048, (void *) logging_queue_1,
                 (configMAX_PRIORITIES-1), NULL, 1 );
       }
-      else
-      {
+    else
+    {
         current_logging_queue = logging_queue_1;
         xTaskCreatePinnedToCore( write_logging_queue_to_sd,
                 "write_lq_2_sd", 2048, (void *) logging_queue_2,
@@ -277,6 +278,9 @@ static void daq_task(void *arg)
   engine_off();
   flasher_off();
   ebrake_set();
+  xTaskCreatePinnedToCore( write_logging_queue_to_sd,
+                "write_lq_final_sd", 2048, (void *) current_logging_queue,
+                (configMAX_PRIORITIES-1), NULL, 1 );  
 
   // per FreeRTOS, tasks MUST be deleted before breaking out of its implementing funciton
   vTaskDelete(NULL);
