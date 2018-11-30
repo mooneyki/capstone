@@ -65,6 +65,7 @@ void ad7998_config( int port_num, int slave_address, uint8_t ch_sel_h, uint8_t c
 	uint8_t data_h = ch_sel_h;
 	uint8_t data_l = ( ch_sel_l | FLTR | ALERT_EN | ALERT_BUSY | ALERT_BUSY_POLARITY );
 	i2c_write_2_byte(port_num, slave_address, addr_ptr, data_h, data_l );
+	printf("ad7998_config -- configuring success\n");
 }
 
 //read function for channel selection 0

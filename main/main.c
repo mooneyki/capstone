@@ -24,6 +24,8 @@ xQueueHandle logging_queue_1, logging_queue_2, current_dp_queue; // queues to st
 pid_ctrl_t brake_current_pid;
 fault_t ctrl_faults; 
 control_t main_ctrl;
+float i_sp[BSIZE]; //brake current set point array (0-100%)
+float tps_sp[BSIZE]; //throttle position set point array (0-100%)
 
 // interrupt for daq_task timer
 void IRAM_ATTR daq_timer_isr( void *para )
@@ -79,21 +81,13 @@ static void daq_task(void *arg)
 
   // vars
   uint32_t intr_status;
-  char filename_i[100];
-  char filename_t[100];
-  char buffer[BSIZE];
-  FILE *fp;
-  char *field;
-  float i_sp[BSIZE]; //brake current set point array (0-100%)
-  float tps_sp[BSIZE]; //throttle position set point array (0-100%)
-  int i = 0;
-  int j = 0;
-  
+
   //flags
   main_ctrl.en_eng = 0; 
   main_ctrl.eng = 0;
   main_ctrl.run = 1;
   main_ctrl.idx = 0;
+  main_ctrl.num_profile = 0;
 
   //quantities
   main_ctrl.i_brake_amps = 0; 
@@ -106,7 +100,6 @@ static void daq_task(void *arg)
     dp.i_brake = 0,     dp.temp1 = 0,          dp.load_cell = 0, 
     dp.tps = 0,         dp.i_sp = 0,           dp.tps_sp = 0
   }; //empty data point  
-  print_data_point( &dp );
 
   //module, peripheral configurations
 
@@ -119,8 +112,8 @@ static void daq_task(void *arg)
   ad7998_config( PORT_0, ADC_SLAVE_ADDR, ch_sel_h, ch_sel_l ); 
 
   // // init sd
-  // init_sd();
-  // xQueueHandle current_logging_queue = logging_queue_1;
+  init_sd();
+  xQueueHandle current_logging_queue = logging_queue_1;
 
   //init GPIOs
   configure_gpio();
@@ -129,7 +122,7 @@ static void daq_task(void *arg)
   pwm_init();
 
   //init PIDs
-  init_pid( &brake_current_pid, 0, 0.1, 0, 10, 100 );
+  init_pid( &brake_current_pid, KP, KI, KD, BRAKE_WINDUP_GUARD, BRAKE_OUTPUT_MAX );
 
   //init faults
   clear_faults ( &ctrl_faults );
@@ -140,88 +133,6 @@ static void daq_task(void *arg)
   flasher_off(); 
   set_throttle(0); //no throttle
   set_brake_duty(0); //no braking 
-
-  // //choose test
-  // printf("Test selection. Enter profile number.\n");
-  // printf("Profile 1 - acceleration w/ launch.\n");
-  // printf("Profile 2 - acceleration w/o launch.\n");
-  // printf("Profile 3 - hill climb.\n");
-  // printf("Profile 4 - test.\n");
-  // scanf("%d", &main_ctrl.num_profile);
-
-  // switch( main_ctrl.num_profile ) 
-  // {
-  //   case 1:
-  //     strcpy(filename_i, "/sdcard/profiles/brake_current_profile_accel_launch.csv");
-  //     strcpy(filename_t, "/sdcard/profiles/throttle_profile_accel_launch.csv");
-  //     break; 
-
-  //   case 2:
-  //     strcpy(filename_i, "/sdcard/profiles/brake_current_profile_accel.csv");
-  //     strcpy(filename_t, "/sdcard/profiles/throttle_profile_accel.csv");
-  //     break; 
-
-  //   case 3:
-  //     strcpy(filename_i, "/sdcard/profiles/brake_current_profile_hill.csv");
-  //     strcpy(filename_t, "/sdcard/profiles/throttle_profile_hill.csv");
-  //     break;
-
-  //   case 4:
-  //     strcpy(filename_i, "/sdcard/profiles/brake_current_test_profile.csv");
-  //     strcpy(filename_t, "/sdcard/profiles/throttle_test_profile.csv");
-  //     break;      
-  // }
-
-  // //LOAD BRAKE PROFILE FROM CSV FILE
-  // /* open the CSV file */
-  // fp = fopen(filename_i,"r");
-  // if( fp == NULL)
-  // {
-  //   printf("Unable to open file '%s'\n",filename_i);
-  //   exit(1);
-  // }
-
-  // /* parse data */
-  // while(fgets(buffer,BSIZE,fp))
-  // {
-  //   field=strtok(buffer,","); /* get value */
-  //   i_sp[i]=atof(field);
-    
-  //   /* display the result in the proper format */
-  //   printf("brake current sp: %5.1f\n",i_sp[i]);
-        
-  //   ++i;
-  // }
-
-  // fclose(fp); /* close file */
-
-  // //LOAD THROTTLE PROFILE FROM CSV FILE
-  // /* open the CSV file */
-  // fp = fopen(filename_t,"r");
-  // if( fp == NULL)
-  // {
-  //   printf("Unable to open file '%s'\n",filename_t);
-  //   exit(1);
-  // }
-
-  // /* parse data */
-  // while(fgets(buffer,BSIZE,fp))
-  // {
-  //   field=strtok(buffer,","); /* get value */
-  //   tps_sp[j]=atof(field);
-    
-  //   /* display the result in the proper format */
-  //   printf("throttle position sp: %5.1f\n",tps_sp[j]);
-
-  //   ++j;
-  // }
-
-  // fclose(fp); /* close file */  
-
-  // if (j != i) {
-  //   printf("Unmatched throttle and brake profiles.\n"); 
-  //   exit(1);
-  // }
 
   //prompt user to start engine
   printf("Start engine.\n");
@@ -243,9 +154,6 @@ static void daq_task(void *arg)
   printf("\n\n\n\n\n-------------- LO0000000OP --------------\n\n\n\n\n");
   /** END INIT STAGE **/  
 
-
-
-
   /** LOOP STAGE **/
 
   while ( main_ctrl.run )
@@ -263,10 +171,41 @@ static void daq_task(void *arg)
   
     // printf("i: %d\n",i);
 
-    rpm_log ( primary_rpm_queue, &(dp.prim_rpm) );
-    rpm_log ( secondary_rpm_queue, &(dp.sec_rpm) );
+    // rpm_log ( primary_rpm_queue, &(dp.prim_rpm) );
+    // rpm_log ( secondary_rpm_queue, &(dp.sec_rpm) );
 
-    // ad7998_read_1( PORT_0, ADC_SLAVE_ADDR, &(dp.temp3), &(dp.belt_temp), &(dp.temp2), &(dp.temp1) );
+    // // ad7998_read_1( PORT_0, ADC_SLAVE_ADDR, &(dp.temp3), &(dp.belt_temp), &(dp.temp2), &(dp.temp1) );
+    // ad7998_read_3( PORT_0, ADC_SLAVE_ADDR, 
+    //               &(dp.torque),
+    //               &(dp.temp3),
+    //               &(dp.belt_temp),
+    //               &(dp.temp2),
+    //               &(dp.i_brake), 
+    //               &(dp.temp1), 
+    //               &(dp.load_cell), 
+    //               &(dp.tps) );
+    // print_data_point( &dp );
+    // main_ctrl.i_brake_amps = ( counts_to_volts ( dp.i_brake ) * I_BRAKE_SCALE )  + I_BRAKE_OFFSET; //ADC counts to amps
+    // printf( "brake current: %4.2f\n", main_ctrl.i_brake_amps );
+    //TEST END
+
+    //check if test is done (profiles ended) or if test faulted
+    if ( ( main_ctrl.idx == BSIZE ) | ( ctrl_faults.trip ) ) {
+        main_ctrl.run = 0;
+    }
+
+    //get new set points (in the form of 0-100% i.e. duty cycle)
+    dp.i_sp = fetch_sp ( main_ctrl.idx, i_sp );
+    dp.tps_sp = fetch_sp ( main_ctrl.idx, tps_sp );
+
+    //e-brake release
+    if ( dp.tps_sp > LAUNCH_THRESHOLD )
+    {
+      ebrake_release();
+    }
+
+    //RECORD DATA
+    // adc
     ad7998_read_3( PORT_0, ADC_SLAVE_ADDR, 
                   &(dp.torque),
                   &(dp.temp3),
@@ -276,75 +215,57 @@ static void daq_task(void *arg)
                   &(dp.temp1), 
                   &(dp.load_cell), 
                   &(dp.tps) );
-    print_data_point( &dp );
     main_ctrl.i_brake_amps = ( counts_to_volts ( dp.i_brake ) * I_BRAKE_SCALE )  + I_BRAKE_OFFSET; //ADC counts to amps
+    main_ctrl.i_brake_duty = 100 * ( main_ctrl.i_brake_amps / I_BRAKE_MAX ); //convert brake current in amps to duty cycle from 0-100%
     printf( "brake current: %4.2f\n", main_ctrl.i_brake_amps );
-    //TEST END
 
-    // //check if test is done (profiles ended) or if test faulted
-    // if ( ( main_ctrl.idx == i ) | ( ctrl_faults->trip ) ) {
-    //     main_ctrl.run = 0;
-    // }
+    // rpm measurements
+    rpm_log ( primary_rpm_queue, &(dp.prim_rpm) );
+    rpm_log ( secondary_rpm_queue, &(dp.sec_rpm) );
 
-    // //get new set points (in the form of 0-100% i.e. duty cycle)
-    // dp.i_sp = fetch_sp ( main_ctrl.idx, i_sp );
-    // dp.tps_sp = fetch_sp ( main_ctrl.idx, tps_sp );
-
-    // //e-brake release
-    // if ( dp.tps_sp > LAUNCH_THRESHOLD )
-    // {
-    //   ebrake_release();
-    // }
-
-    // //RECORD DATA
-    // // adc
-    // ad7998_read_0( PORT_0, ADC_SLAVE_ADDR, &(dp.torque), &(dp.belt_temp), &(dp.i_brake), &(dp.load_cell) );
-    // main_ctrl.i_brake_amps = ( counts_to_volts ( dp.i_brake ) * I_BRAKE_SCALE )  + I_BRAKE_OFFSET; //ADC counts to amps
-    // main_ctrl.i_brake_duty = 100 * ( main_ctrl.i_brake_amps / I_BRAKE_MAX ); //convert brake current in amps to duty cycle from 0-100%
-
-    // // rpm measurements
-    // rpm_log ( primary_rpm_queue, &(dp.prim_rpm) );
-    // rpm_log ( secondary_rpm_queue, &(dp.sec_rpm) );
-
-    // //update PIDs
+    //update PIDs
     // pid_update ( &brake_current_pid, dp.i_sp, main_ctrl.i_brake_duty );
 
-    // //set brake current / throttle
-    // set_throttle( dp.tps_sp ); 
-    // set_brake_duty( brake_current_pid->output ); 
+    //set brake current / throttle
+    set_throttle( dp.tps_sp ); 
+    // set_brake_duty( brake_current_pid.output ); 
+    set_brake_duty( dp.i_sp ); 
 
-    // //check for faults
+
+    print_data_point( &dp );
+
+    //check for faults
     // if ( main_ctrl.i_brake_amps > MAX_I_BRAKE ) {
     //   ctrl_faults->trip = 1;
     //   ctrl_faults->overcurrent_fault = 1;      
     // }
 
-    // // push struct to logging queue
-    // // if the queue is full, switch queues and send the full for writing to SD
-    // if (xQueueSend( current_logging_queue, &dp, 0 ) == errQUEUE_FULL )
-    // {
-    //   printf("daq_task -- queue full, writing and switiching...\n");
-    //   if ( current_logging_queue == logging_queue_1 )
-    //   {
-    //     current_logging_queue = logging_queue_2;
-    //     xTaskCreatePinnedToCore( write_logging_queue_to_sd,
-    //             "write_lq_1_sd", 2048, (void *) logging_queue_1,
-    //             (configMAX_PRIORITIES-1), NULL, 1 );
-    //   }
-    //   else
-    //   {
-    //     current_logging_queue = logging_queue_1;
-    //     xTaskCreatePinnedToCore( write_logging_queue_to_sd,
-    //             "write_lq_2_sd", 2048, (void *) logging_queue_2,
-    //             (configMAX_PRIORITIES-1), NULL, 1 );
-    //   }
+    // push struct to logging queue
+    // if the queue is full, switch queues and send the full for writing to SD
+    if (xQueueSend( current_logging_queue, &dp, 0 ) == errQUEUE_FULL )
+    {
+      printf("daq_task -- queue full, writing and switiching...\n");
+      if ( current_logging_queue == logging_queue_1 )
+      {
+        current_logging_queue = logging_queue_2;
+        xTaskCreatePinnedToCore( write_logging_queue_to_sd,
+                "write_lq_1_sd", 2048, (void *) logging_queue_1,
+                (configMAX_PRIORITIES-1), NULL, 1 );
+      }
+      else
+      {
+        current_logging_queue = logging_queue_1;
+        xTaskCreatePinnedToCore( write_logging_queue_to_sd,
+                "write_lq_2_sd", 2048, (void *) logging_queue_2,
+                (configMAX_PRIORITIES-1), NULL, 1 );
+      }
 
-    //   // reset, though queue should be empty after writing
-    //   // queue won't be empty if a writing task overlap occurred
-    //   xQueueReset( current_logging_queue );
-    // }
+      // reset, though queue should be empty after writing
+      // queue won't be empty if a writing task overlap occurred
+      xQueueReset( current_logging_queue );
+    }
 
-    // ++main_ctrl.idx;
+    ++main_ctrl.idx;
   }
 
   /** END LOOP STAGE **/
@@ -359,6 +280,53 @@ static void daq_task(void *arg)
 
   // per FreeRTOS, tasks MUST be deleted before breaking out of its implementing funciton
   vTaskDelete(NULL);
+}
+
+void get_profile () 
+{
+  int i = 0;
+
+  //choose test
+  printf("Test selection. Enter profile number.\n");
+  printf("Profile 1 - acceleration w/ launch.\n");
+  printf("Profile 2 - acceleration w/o launch.\n");
+  printf("Profile 3 - hill climb.\n");
+  printf("Profile 4 - test.\n");
+  while ( !main_ctrl.num_profile ) {
+    scanf("%d", &main_ctrl.num_profile);
+  }
+
+  switch( main_ctrl.num_profile ) 
+  {
+    case 1:
+      for ( i = 0; i < BSIZE; i++) {
+        i_sp[i] = i_sp_accel_launch[i];
+        tps_sp[i] = tps_sp_accel_launch[i];
+      }
+      break; 
+
+    case 2:
+      for ( i = 0; i < BSIZE; i++) {
+        i_sp[i] = i_sp_accel[i];
+        tps_sp[i] = tps_sp_accel[i];
+      }
+      break; 
+
+    case 3:
+      for ( i = 0; i < BSIZE; i++) {
+        i_sp[i] = i_sp_hill[i];
+        tps_sp[i] = tps_sp_hill[i];
+      }   
+      break;
+
+    case 4:
+      for ( i = 0; i < BSIZE; i++) {
+        i_sp[i] = i_sp_test[i];
+        tps_sp[i] = tps_sp_test[i];
+      }    
+      break;      
+  }
+
 }
 
 // initialize the daq timer and start the daq task
@@ -382,8 +350,9 @@ void app_main()
 
   // start daq timer and tasks
   daq_timer_init();
+  get_profile();
 
-  xTaskCreatePinnedToCore( daq_task, "daq_task", 2048, NULL, (configMAX_PRIORITIES-1), NULL, 0 );
+  xTaskCreatePinnedToCore( daq_task, "daq_task", 4096, NULL, (configMAX_PRIORITIES-1), NULL, 0 );
 }
 
 

@@ -96,7 +96,7 @@ static void write_logging_queue_to_sd(void *arg)
 
 void init_sd()
 {
-  printf("init_sd -- configuring SD storage\n");
+  // printf("init_sd -- configuring SD storage\n");
 
   sdmmc_host_t host = SDSPI_HOST_DEFAULT();
 
@@ -121,6 +121,8 @@ void init_sd()
 
   //create mutex
   write_lock = xSemaphoreCreateMutex();
+
+  printf("init_sd -- configuring SD success\n");
 
 }
 
