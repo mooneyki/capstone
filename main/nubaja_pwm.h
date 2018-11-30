@@ -13,7 +13,7 @@
 #define BRAKE_PWM 				17 				//net name IO17_BRAKE_PWM
 #define SERVO_PWM_FREQUENCY		50				//HZ
 #define BRAKE_PWM_FREQUENCY		1000			//HZ
-#define SERVO_OFFSET_DEG 		0
+#define SERVO_OFFSET_DEG 		10
 
 void pwm_init () 
 {

@@ -91,7 +91,7 @@ static void write_logging_queue_to_sd(void *arg)
     vTaskDelete(NULL);
   }
   fprintf(fp, "%s", buff);
-  printf("%s",buff);
+  // printf("%s",buff);
   fclose(fp);
 
   printf("write_logging_queue_to_sd -- writing done\n");
