@@ -10,7 +10,7 @@ torque_offset = 0;
 temp_scale = 44.5;
 temp_offset = 14.3;
 
-belt_temp_scale = 445.8;
+belt_temp_scale = 0.359;
 belt_temp_offset = -307.4;
 
 i_brake_scale = 1;
