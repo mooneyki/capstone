@@ -144,7 +144,7 @@ void rpm_log ( QueueHandle_t queue, uint16_t* val )
 {
   uint16_t rst = 0;
   xQueuePeek( queue, val, 0 );
-  xQueueOverwrite( queue, &rst ); //overwrite queue to 0 to avoid repetitive values
+  // xQueueOverwrite( queue, &rst ); //overwrite queue to 0 to avoid repetitive values
 }
 
 #endif // NUBAJA_GPIO_H_
