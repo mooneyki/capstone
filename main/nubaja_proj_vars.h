@@ -14,19 +14,24 @@
 //adc scales, offsets (physical quantity = scale*volts + offset)
 #define TORQUE_SCALE 			15.6
 #define TORQUE_OFFSET 			0
-#define TEMP_SCALE 				44.5
-#define TEMP_OFFSET 			14.3
+
+#define THERM_SCALE 			44.5
+#define THERM_OFFSET 			14.3
+
 #define BELT_TEMP_SCALE 		0.359
 #define BELT_TEMP_OFFSET 		-307.4
+
 #define I_BRAKE_SCALE 			1
 #define I_BRAKE_OFFSET 			0.05
+
 #define LOAD_CELL_SCALE 		30.3
 #define LOAD_CELL_OFFSET 		-50
 
 //fault thresholds
 #define MAX_I_BRAKE				2.4 //amps
-#define MAX_BELT_TEMP			200 //deg F
-#define MAX_CVT_AMBIENT 		200 //deg F
+#define MAX_BELT_TEMP			100 //deg F
+#define MAX_CVT_AMBIENT 		100 //deg F
+#define MAX_BRAKE_TEMP			100 //deg C
 #define I_BRAKE_MAX           	3.6
 
 //PIDs
@@ -50,7 +55,9 @@ struct control
 
 	//quantities
 	float i_brake_amps; 
-	float i_brake_duty; 
+	float i_brake_duty;
+	float brake_temp;
+	float belt_temp;
 };
 typedef struct control control_t;
 
@@ -109,7 +116,7 @@ float i_sp_demo[BSIZE] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 						   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 						   0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-float tps_sp_demo[BSIZE] = { 0, 2, 4, , 6, 8, 10, 12, 14,16,
+float tps_sp_demo[BSIZE] = { 0, 2, 4, 5, 6, 8, 10, 12, 14,16,
 						   18, 20, 22, 24, 26, 28, 30, 32, 34, 36,
 						   38, 40, 42, 44, 46, 48, 50, 52, 54, 56,
 						   58, 60, 62, 64, 66, 68, 70, 72, 74, 76,

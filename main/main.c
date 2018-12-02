@@ -93,6 +93,8 @@ static void daq_task(void *arg)
   //quantities
   main_ctrl.i_brake_amps = 0; 
   main_ctrl.i_brake_duty = 0; 
+  main_ctrl.brake_temp = 0; 
+  main_ctrl.belt_temp = 0; 
 
   data_point dp =
   {
@@ -216,8 +218,13 @@ static void daq_task(void *arg)
                   &(dp.temp1), 
                   &(dp.load_cell), 
                   &(dp.tps) );
+
+    //relevant physical quantity conversion for faults
     main_ctrl.i_brake_amps = ( counts_to_volts ( dp.i_brake ) * I_BRAKE_SCALE )  + I_BRAKE_OFFSET; //ADC counts to amps
     main_ctrl.i_brake_duty = 100 * ( main_ctrl.i_brake_amps / I_BRAKE_MAX ); //convert brake current in amps to duty cycle from 0-100%
+    main_ctrl.brake_temp = ( counts_to_volts ( dp.temp3 ) * THERM_SCALE )  + THERM_OFFSET; //ADC counts to amps
+    main_ctrl.belt_temp = ( counts_to_volts ( dp.belt_temp ) * BELT_TEMP_SCALE )  + BELT_TEMP_OFFSET; //ADC counts to amps
+    
     printf( "brake current: %4.2f\n", main_ctrl.i_brake_amps );
 
     // rpm measurements
@@ -237,9 +244,15 @@ static void daq_task(void *arg)
     print_data_point( &dp );
 
     // check for faults
-    if ( main_ctrl.i_brake_amps > MAX_I_BRAKE ) {
+    if ( main_ctrl.i_brake_amps > MAX_I_BRAKE ) 
+    {
       ctrl_faults.trip = 1;
       ctrl_faults.overcurrent_fault = 1;      
+    }
+    if ( ( main_ctrl.belt_temp > MAX_BELT_TEMP ) | ( main_ctrl.brake_temp > MAX_BRAKE_TEMP ) )
+    {
+      ctrl_faults.trip = 1;
+      ctrl_faults.overtemp_fault = 1;      
     }
 
     // push struct to logging queue
