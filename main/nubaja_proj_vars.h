@@ -7,20 +7,27 @@
 #define DAQ_TIMER_HZ          	10           // frequency of the daq timer in Hz
 #define DAQ_TIMER_DIVIDER     	100
 
-
 //ctrl
 #define LAUNCH_THRESHOLD      	50 //% of throttle needed for launch
 #define BSIZE                 	100 //test length
 
-//adc scales, offsets (y = scale*x + offset)
-#define I_BRAKE_SCALE         	1
-#define I_BRAKE_OFFSET        	0.05
-#define I_BRAKE_MAX           	3.6
+//adc scales, offsets (physical quantity = scale*volts + offset)
+#define TORQUE_SCALE 			15.6
+#define TORQUE_OFFSET 			0
+#define TEMP_SCALE 				44.5
+#define TEMP_OFFSET 			14.3
+#define BELT_TEMP_SCALE 		0.359
+#define BELT_TEMP_OFFSET 		-307.4
+#define I_BRAKE_SCALE 			1
+#define I_BRAKE_OFFSET 			0.05
+#define LOAD_CELL_SCALE 		30.3
+#define LOAD_CELL_OFFSET 		-50
 
 //fault thresholds
 #define MAX_I_BRAKE				2.4 //amps
 #define MAX_BELT_TEMP			200 //deg F
 #define MAX_CVT_AMBIENT 		200 //deg F
+#define I_BRAKE_MAX           	3.6
 
 //PIDs
 #define	KP						0 
@@ -48,7 +55,16 @@ struct control
 typedef struct control control_t;
 
 //profiles
-float i_sp_accel_launch[BSIZE];
+float i_sp_accel_launch[BSIZE] = 	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+						   			0, 100, 100, 99, 99, 99, 99, 98, 98, 98, 
+						   			97, 97, 97, 96, 96, 96, 95, 95, 95, 94,
+						   			94, 94, 93, 93, 92, 92, 91, 91, 91, 90,
+						   			90, 89, 89, 88, 87, 87, 86, 86, 85, 85,
+						   			84, 83, 83, 82, 81, 81, 80, 79, 78, 78,
+						   			77, 76, 75, 74, 74, 73, 72, 71, 70, 69,
+						   			68, 67, 67, 66, 65, 64, 63, 62, 61, 60,
+						   			59, 58, 57, 56, 55, 54, 52, 51, 50, 49,
+						   			48, 47, 46, 45, 44, 42, 41, 40, 39, 38};
 
 float tps_sp_accel_launch[BSIZE];
 
