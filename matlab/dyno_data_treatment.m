@@ -4,7 +4,7 @@ mkdir (fullfile(dir));
 
 %scales, offsets
 %update this one
-torque_scale = 1;
+torque_scale = 15.6;
 torque_offset = 0;
 
 temp_scale = 44.5;
