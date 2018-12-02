@@ -29,8 +29,8 @@
 
 //fault thresholds
 #define MAX_I_BRAKE				2.4 //amps
-#define MAX_BELT_TEMP			100 //deg F
-#define MAX_CVT_AMBIENT 		100 //deg F
+#define MAX_BELT_TEMP			150 //deg C
+#define MAX_CVT_AMBIENT 		100 //deg C
 #define MAX_BRAKE_TEMP			100 //deg C
 #define I_BRAKE_MAX           	3.6
 

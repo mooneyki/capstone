@@ -47,8 +47,6 @@ void IRAM_ATTR daq_timer_isr( void *para )
   xQueueOverwriteFromISR( daq_timer_queue, &intr_status, NULL );
 }
 
-
-
 static void daq_timer_init()
 {
   // select and initialize basic parameters of the timer
@@ -70,6 +68,60 @@ static void daq_timer_init()
   timer_isr_register( DAQ_TIMER_GROUP, DAQ_TIMER_IDX, daq_timer_isr, NULL, ESP_INTR_FLAG_IRAM, NULL );
 
   timer_start(DAQ_TIMER_GROUP, DAQ_TIMER_IDX);
+}
+
+static void get_profile () 
+{
+  int i = 0;
+
+  //choose test
+  printf("Test selection. Enter profile number.\n");
+  printf("Profile 1 - acceleration w/ launch.\n");
+  printf("Profile 2 - acceleration w/o launch.\n");
+  printf("Profile 3 - hill climb.\n");
+  printf("Profile 4 - test.\n");
+  printf("Profile 5 - demo.\n");
+  while ( !main_ctrl.num_profile ) {
+    scanf("%d", &main_ctrl.num_profile);
+  }
+
+  switch( main_ctrl.num_profile ) 
+  {
+    case 1:
+      for ( i = 0; i < BSIZE; i++) {
+        i_sp[i] = i_sp_accel_launch[i];
+        tps_sp[i] = tps_sp_accel_launch[i];
+      }
+      break; 
+
+    case 2:
+      for ( i = 0; i < BSIZE; i++) {
+        i_sp[i] = i_sp_accel[i];
+        tps_sp[i] = tps_sp_accel[i];
+      }
+      break; 
+
+    case 3:
+      for ( i = 0; i < BSIZE; i++) {
+        i_sp[i] = i_sp_hill[i];
+        tps_sp[i] = tps_sp_hill[i];
+      }   
+      break;
+
+    case 4:
+      for ( i = 0; i < BSIZE; i++) {
+        i_sp[i] = i_sp_test[i];
+        tps_sp[i] = tps_sp_test[i];
+      } 
+    case 5:
+      for ( i = 0; i < BSIZE; i++) {
+        i_sp[i] = i_sp_demo[i];
+        tps_sp[i] = tps_sp_demo[i];
+        main_ctrl.en_log = 0;
+      } 
+      break;      
+  }
+
 }
 
 
@@ -163,34 +215,6 @@ static void daq_task(void *arg)
   {
     // wait for timer alarm
     xQueueReceive( daq_timer_queue, &intr_status, portMAX_DELAY );
-   
-    //TEST START
-    // set_throttle(i); 
-    // set_brake_duty(75);   
-    // ++i; 
-    // if (i > 100) {
-    //   i = 0;
-    // } 
-  
-    // printf("i: %d\n",i);
-
-    // rpm_log ( primary_rpm_queue, &(dp.prim_rpm) );
-    // rpm_log ( secondary_rpm_queue, &(dp.sec_rpm) );
-
-    // // ad7998_read_1( PORT_0, ADC_SLAVE_ADDR, &(dp.temp3), &(dp.belt_temp), &(dp.temp2), &(dp.temp1) );
-    // ad7998_read_3( PORT_0, ADC_SLAVE_ADDR, 
-    //               &(dp.torque),
-    //               &(dp.temp3),
-    //               &(dp.belt_temp),
-    //               &(dp.temp2),
-    //               &(dp.i_brake), 
-    //               &(dp.temp1), 
-    //               &(dp.load_cell), 
-    //               &(dp.tps) );
-    // print_data_point( &dp );
-    // main_ctrl.i_brake_amps = ( counts_to_volts ( dp.i_brake ) * I_BRAKE_SCALE )  + I_BRAKE_OFFSET; //ADC counts to amps
-    // printf( "brake current: %4.2f\n", main_ctrl.i_brake_amps );
-    //TEST END
 
     //check if test is done (profiles ended) or if test faulted
     if ( ( main_ctrl.idx == BSIZE ) | ( ctrl_faults.trip ) ) {
@@ -292,7 +316,7 @@ static void daq_task(void *arg)
   set_throttle( 0 ); //no throttle
   set_brake_duty( 0 ); //no braking 
   reset_pid( &brake_current_pid );
-  engine_off();
+  // engine_off();
   flasher_off();
   ebrake_set();
   xTaskCreatePinnedToCore( write_logging_queue_to_sd,
@@ -301,60 +325,6 @@ static void daq_task(void *arg)
 
   // per FreeRTOS, tasks MUST be deleted before breaking out of its implementing funciton
   vTaskDelete(NULL);
-}
-
-void get_profile () 
-{
-  int i = 0;
-
-  //choose test
-  printf("Test selection. Enter profile number.\n");
-  printf("Profile 1 - acceleration w/ launch.\n");
-  printf("Profile 2 - acceleration w/o launch.\n");
-  printf("Profile 3 - hill climb.\n");
-  printf("Profile 4 - test.\n");
-  printf("Profile 5 - demo.\n");
-  while ( !main_ctrl.num_profile ) {
-    scanf("%d", &main_ctrl.num_profile);
-  }
-
-  switch( main_ctrl.num_profile ) 
-  {
-    case 1:
-      for ( i = 0; i < BSIZE; i++) {
-        i_sp[i] = i_sp_accel_launch[i];
-        tps_sp[i] = tps_sp_accel_launch[i];
-      }
-      break; 
-
-    case 2:
-      for ( i = 0; i < BSIZE; i++) {
-        i_sp[i] = i_sp_accel[i];
-        tps_sp[i] = tps_sp_accel[i];
-      }
-      break; 
-
-    case 3:
-      for ( i = 0; i < BSIZE; i++) {
-        i_sp[i] = i_sp_hill[i];
-        tps_sp[i] = tps_sp_hill[i];
-      }   
-      break;
-
-    case 4:
-      for ( i = 0; i < BSIZE; i++) {
-        i_sp[i] = i_sp_test[i];
-        tps_sp[i] = tps_sp_test[i];
-      } 
-    case 5:
-      for ( i = 0; i < BSIZE; i++) {
-        i_sp[i] = i_sp_demo[i];
-        tps_sp[i] = tps_sp_demo[i];
-        main_ctrl.en_log = 0;
-      } 
-      break;      
-  }
-
 }
 
 // initialize the daq timer and start the daq task
