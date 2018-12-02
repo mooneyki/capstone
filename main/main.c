@@ -88,6 +88,7 @@ static void daq_task(void *arg)
   main_ctrl.run = 1;
   main_ctrl.idx = 0;
   main_ctrl.num_profile = 0;
+  main_ctrl.en_log = 1;
 
   //quantities
   main_ctrl.i_brake_amps = 0; 
@@ -223,11 +224,11 @@ static void daq_task(void *arg)
     rpm_log ( primary_rpm_queue, &(dp.prim_rpm) );
     rpm_log ( secondary_rpm_queue, &(dp.sec_rpm) );
 
-    //update PIDs
+    //update PID
     // pid_update ( &brake_current_pid, dp.i_sp, main_ctrl.i_brake_duty );
     // printf( "brake cmd: %4.2f\n", brake_current_pid.output );
 
-    //set brake current / throttle
+    //set brake current, throttle
     set_throttle( dp.tps_sp ); 
     // set_brake_duty( brake_current_pid.output ); 
     set_brake_duty( dp.i_sp ); 
@@ -243,27 +244,30 @@ static void daq_task(void *arg)
 
     // push struct to logging queue
     // if the queue is full, switch queues and send the full for writing to SD
-    if (xQueueSend( current_logging_queue, &dp, 0 ) == errQUEUE_FULL )
+    if ( main_ctrl.en_log )   
     {
-      printf("daq_task -- queue full, writing and switiching...\n");
-      if ( current_logging_queue == logging_queue_1 )
+      if (xQueueSend( current_logging_queue, &dp, 0 ) == errQUEUE_FULL )
       {
-        current_logging_queue = logging_queue_2;
-        xTaskCreatePinnedToCore( write_logging_queue_to_sd,
-                "write_lq_1_sd", 2048, (void *) logging_queue_1,
-                (configMAX_PRIORITIES-1), NULL, 1 );
-      }
-    else
-    {
-        current_logging_queue = logging_queue_1;
-        xTaskCreatePinnedToCore( write_logging_queue_to_sd,
-                "write_lq_2_sd", 2048, (void *) logging_queue_2,
-                (configMAX_PRIORITIES-1), NULL, 1 );
-      }
+        printf("daq_task -- queue full, writing and switiching...\n");
+        if ( current_logging_queue == logging_queue_1 )
+        {
+          current_logging_queue = logging_queue_2;
+          xTaskCreatePinnedToCore( write_logging_queue_to_sd,
+                  "write_lq_1_sd", 2048, (void *) logging_queue_1,
+                  (configMAX_PRIORITIES-1), NULL, 1 );
+        }
+      else
+      {
+          current_logging_queue = logging_queue_1;
+          xTaskCreatePinnedToCore( write_logging_queue_to_sd,
+                  "write_lq_2_sd", 2048, (void *) logging_queue_2,
+                  (configMAX_PRIORITIES-1), NULL, 1 );
+        }
 
-      // reset, though queue should be empty after writing
-      // queue won't be empty if a writing task overlap occurred
-      xQueueReset( current_logging_queue );
+        // reset, though queue should be empty after writing
+        // queue won't be empty if a writing task overlap occurred
+        xQueueReset( current_logging_queue );
+      }
     }
 
     ++main_ctrl.idx;
@@ -296,6 +300,7 @@ void get_profile ()
   printf("Profile 2 - acceleration w/o launch.\n");
   printf("Profile 3 - hill climb.\n");
   printf("Profile 4 - test.\n");
+  printf("Profile 5 - demo.\n");
   while ( !main_ctrl.num_profile ) {
     scanf("%d", &main_ctrl.num_profile);
   }
@@ -327,7 +332,13 @@ void get_profile ()
       for ( i = 0; i < BSIZE; i++) {
         i_sp[i] = i_sp_test[i];
         tps_sp[i] = tps_sp_test[i];
-      }    
+      } 
+    case 5:
+      for ( i = 0; i < BSIZE; i++) {
+        i_sp[i] = i_sp_demo[i];
+        tps_sp[i] = tps_sp_demo[i];
+        main_ctrl.en_log = 0;
+      } 
       break;      
   }
 
