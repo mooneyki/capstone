@@ -111,8 +111,10 @@ static void get_profile ()
     case 4:
       for ( i = 0; i < BSIZE; i++) {
         i_sp[i] = i_sp_test[i];
-        tps_sp[i] = tps_sp_test[i];
+        tps_sp[i] = i_sp_demo[i]; //THROTTLE DISABLED
       } 
+      break;
+
     case 5:
       for ( i = 0; i < BSIZE; i++) {
         i_sp[i] = i_sp_demo[i];
@@ -184,19 +186,19 @@ static void daq_task(void *arg)
 
   //default states
   ebrake_set();
-  engine_off();
+  engine_on();
   flasher_off(); 
   set_throttle(0); //no throttle
   set_brake_duty(0); //no braking 
 
-  //prompt user to start engine
-  printf("Start engine.\n");
-  printf("1 = YES ; 0 = NO\n");
-  while ( !main_ctrl.en_eng ) 
-  {
-    scanf("%d\n", &main_ctrl.en_eng);
-  }
-  engine_on();
+  // //prompt user to start engine
+  // printf("Start engine.\n");
+  // printf("1 = YES ; 0 = NO\n");
+  // while ( !main_ctrl.en_eng ) 
+  // {
+  //   scanf("%d\n", &main_ctrl.en_eng);
+  // }
+  // engine_on();
 
   //prompt user to confirm engine running and warm
   printf("Engine running?\n");
@@ -218,7 +220,8 @@ static void daq_task(void *arg)
 
     //check if test is done (profiles ended) or if test faulted
     if ( ( main_ctrl.idx == BSIZE ) | ( ctrl_faults.trip ) ) {
-        main_ctrl.run = 0;
+        // main_ctrl.run = 0;
+        main_ctrl_idx = 0;
     }
 
     //get new set points (in the form of 0-100% i.e. duty cycle)
@@ -249,7 +252,7 @@ static void daq_task(void *arg)
     main_ctrl.brake_temp = ( counts_to_volts ( dp.temp3 ) * THERM_SCALE )  + THERM_OFFSET; //ADC counts to amps
     main_ctrl.belt_temp = ( counts_to_volts ( dp.belt_temp ) * BELT_TEMP_SCALE )  + BELT_TEMP_OFFSET; //ADC counts to amps
     
-    printf( "brake current: %4.2f\n", main_ctrl.i_brake_amps );
+    // printf( "brake current: %4.2f\n", main_ctrl.i_brake_amps );
 
     // rpm measurements
     rpm_log ( primary_rpm_queue, &(dp.prim_rpm) );
@@ -316,7 +319,7 @@ static void daq_task(void *arg)
   set_throttle( 0 ); //no throttle
   set_brake_duty( 0 ); //no braking 
   reset_pid( &brake_current_pid );
-  // engine_off();
+  engine_off();
   flasher_off();
   ebrake_set();
   xTaskCreatePinnedToCore( write_logging_queue_to_sd,
