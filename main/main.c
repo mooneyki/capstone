@@ -22,6 +22,7 @@
 xQueueHandle daq_timer_queue; // queue to time the daq task
 xQueueHandle logging_queue_1, logging_queue_2, current_dp_queue; // queues to store data points
 pid_ctrl_t brake_current_pid;
+pid_ctrl_t engine_breakin_pid; //for engine break-in only
 fault_t ctrl_faults; 
 control_t main_ctrl;
 float i_sp[BSIZE]; //brake current set point array (0-100%)
@@ -79,7 +80,7 @@ static void get_profile ()
   printf("Profile 1 - acceleration w/ launch.\n");
   printf("Profile 2 - acceleration w/o launch.\n");
   printf("Profile 3 - hill climb.\n");
-  printf("Profile 4 - test.\n");
+  printf("Profile 4 - engine break in.\n");
   printf("Profile 5 - demo.\n");
   while ( !main_ctrl.num_profile ) {
     scanf("%d", &main_ctrl.num_profile);
@@ -110,9 +111,10 @@ static void get_profile ()
 
     case 4:
       for ( i = 0; i < BSIZE; i++) {
-        i_sp[i] = i_sp_test[i];
-        tps_sp[i] = i_sp_demo[i]; //THROTTLE DISABLED
+        i_sp[i] = 0; //no need for brake in engine break-in
+        tps_sp[i] = 0.05 * BREAK_IN_RPM - 90; //variable throttle disabled; constant value
       } 
+      main_ctrl.en_log = 0;
       break;
 
     case 5:
@@ -143,6 +145,11 @@ static void daq_task(void *arg)
   main_ctrl.idx = 0;
   main_ctrl.num_profile = 0;
   main_ctrl.en_log = 1;
+
+  if ( main_ctrl.num_profile == 4 ) 
+  {
+    main_ctrl.en_log = 0;
+  }
 
   //quantities
   main_ctrl.i_brake_amps = 0; 
@@ -219,9 +226,9 @@ static void daq_task(void *arg)
     xQueueReceive( daq_timer_queue, &intr_status, portMAX_DELAY );
 
     //check if test is done (profiles ended) or if test faulted
-    if ( ( main_ctrl.idx == BSIZE ) | ( ctrl_faults.trip ) ) {
-        // main_ctrl.run = 0;
-        main_ctrl_idx = 0;
+    //end disabled for break-in for continuous operation
+    if ( ( ( main_ctrl.idx == BSIZE ) | ( ctrl_faults.trip ) ) & ( main_ctrl.num_profile != 4 ) ) {
+        main_ctrl.run = 0;
     }
 
     //get new set points (in the form of 0-100% i.e. duty cycle)
@@ -234,6 +241,9 @@ static void daq_task(void *arg)
       ebrake_release();
     }
 
+
+    if ( main_ctrl.en_log ) 
+    {
     //RECORD DATA
     // adc
     ad7998_read_3( PORT_0, ADC_SLAVE_ADDR, 
@@ -257,6 +267,7 @@ static void daq_task(void *arg)
     // rpm measurements
     rpm_log ( primary_rpm_queue, &(dp.prim_rpm) );
     rpm_log ( secondary_rpm_queue, &(dp.sec_rpm) );
+    }
 
     //update PID
     // pid_update ( &brake_current_pid, dp.i_sp, main_ctrl.i_brake_duty );
@@ -268,7 +279,7 @@ static void daq_task(void *arg)
     set_brake_duty( dp.i_sp ); 
 
 
-    print_data_point( &dp );
+    // print_data_point( &dp );
 
     // check for faults
     if ( main_ctrl.i_brake_amps > MAX_I_BRAKE ) 

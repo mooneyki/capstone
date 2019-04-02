@@ -27,6 +27,8 @@
 #define LOAD_CELL_SCALE 		30.3
 #define LOAD_CELL_OFFSET 		-50
 
+#define BREAK_IN_RPM			1800
+
 //fault thresholds
 #define MAX_I_BRAKE				2.4 //amps
 #define MAX_BELT_TEMP			150 //deg C
